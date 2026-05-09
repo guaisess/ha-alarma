@@ -7,7 +7,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,6 +27,12 @@ jobs:
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
+
+      - name: Generate Flutter project structure
+        run: |
+          flutter create --project-name ha_alarm --org com.homeassistant /tmp/flutter_base
+          cp -r /tmp/flutter_base/android ./
+          cp -r /tmp/flutter_base/test ./
 
       - name: Get dependencies
         run: flutter pub get
