@@ -46,27 +46,23 @@ jobs:
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
           sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"\/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"\/>' $MANIFEST
 
-      - name: Setup keystore
+      - name: Setup keystore and signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ env.PROJECT_DIR }}/android/app/ha_alarm.jks
-          cat >> ${{ env.PROJECT_DIR }}/android/app/build.gradle << 'GRADLE'
-
-android {
-    signingConfigs {
-        release {
-            storeFile file("ha_alarm.jks")
-            storePassword "${{ secrets.KEYSTORE_PASSWORD }}"
-            keyAlias "${{ secrets.KEY_ALIAS }}"
-            keyPassword "${{ secrets.KEY_PASSWORD }}"
-        }
-    }
-    buildTypes {
-        release {
-            signingConfig signingConfigs.release
-        }
-    }
-}
-GRADLE
+          echo "$KEYSTORE_BASE64" | base64 --decode > ${{ env.PROJECT_DIR }}/android/app/ha_alarm.jks
+          GRADLE=${{ env.PROJECT_DIR }}/android/app/build.gradle
+          echo "" >> $GRADLE
+          echo "android.signingConfigs.create('release_config') {" >> $GRADLE
+          echo "    storeFile file('ha_alarm.jks')" >> $GRADLE
+          echo "    storePassword '$KEYSTORE_PASSWORD'" >> $GRADLE
+          echo "    keyAlias '$KEY_ALIAS'" >> $GRADLE
+          echo "    keyPassword '$KEY_PASSWORD'" >> $GRADLE
+          echo "}" >> $GRADLE
+          echo "android.buildTypes.release.signingConfig = android.signingConfigs.getByName('release_config')" >> $GRADLE
 
       - name: Get dependencies
         working-directory: ${{ env.PROJECT_DIR }}
