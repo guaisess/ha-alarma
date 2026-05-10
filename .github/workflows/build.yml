@@ -40,6 +40,17 @@ jobs:
           cp -r /tmp/flutter_base/android ${{ env.PROJECT_DIR }}/
           cp -r /tmp/flutter_base/test    ${{ env.PROJECT_DIR }}/
 
+      - name: Patch AndroidManifest - permissions y cleartext
+        run: |
+          MANIFEST=${{ env.PROJECT_DIR }}/android/app/src/main/AndroidManifest.xml
+          # Añadir permiso INTERNET si no está
+          grep -q "INTERNET" $MANIFEST || \
+            sed -i 's/<manifest/<manifest/;/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"\/>' $MANIFEST
+          # Permitir tráfico HTTP (cleartext)
+          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
+          echo "--- Manifest resultante ---"
+          cat $MANIFEST
+
       - name: Get dependencies
         working-directory: ${{ env.PROJECT_DIR }}
         run: flutter pub get
