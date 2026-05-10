@@ -34,6 +34,12 @@ jobs:
           echo "Found project at: $PROJ"
           echo "PROJECT_DIR=$PROJ" >> $GITHUB_ENV
 
+      - name: Get app version
+        run: |
+          VERSION=$(grep '^version:' ${{ env.PROJECT_DIR }}/pubspec.yaml | sed 's/version: //;s/+.*//' | tr -d ' ')
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Version: $VERSION"
+
       - name: Generate Android structure
         run: |
           flutter create --project-name ha_alarm --org com.homeassistant /tmp/flutter_base
@@ -76,9 +82,18 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: flutter build apk --release --no-tree-shake-icons
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ha-alarm-apk
           path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.APP_VERSION }}
+          name: v${{ env.APP_VERSION }}
+          files: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
