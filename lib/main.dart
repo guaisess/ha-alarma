@@ -148,6 +148,8 @@ class UpdateInfo {
 }
 
 class UpdateService {
+  static bool _checkedThisSession = false;
+
   static bool _isNewer(String remote, String current) {
     List<int> parse(String v) => v.split('.').map((e) => int.tryParse(e) ?? 0).toList();
     final r = parse(remote);
@@ -162,14 +164,20 @@ class UpdateService {
   }
 
   static Future<UpdateInfo?> check(String versionJsonUrl) async {
+    if (_checkedThisSession) return null;
+    _checkedThisSession = true;
     try {
       final res = await http.get(Uri.parse(versionJsonUrl))
           .timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) return null;
-      final data = jsonDecode(res.body);
+      final data          = jsonDecode(res.body);
       final remoteVersion = data['version'] as String;
       final apkUrl        = data['url'] as String;
       final info          = await PackageInfo.fromPlatform();
+      // No preguntar si ya notificamos esta versión antes
+      final prefs         = await SharedPreferences.getInstance();
+      final lastNotified  = prefs.getString('last_update_notified') ?? '';
+      if (lastNotified == remoteVersion) return null;
       if (_isNewer(remoteVersion, info.version)) {
         return UpdateInfo(version: remoteVersion, apkUrl: apkUrl);
       }
@@ -282,7 +290,11 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _downloading ? null : () => Navigator.pop(ctx),
+                    onPressed: _downloading ? null : () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setString('last_update_notified', info.version);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: kSubtext,
                       side: const BorderSide(color: kSubtext),
@@ -298,6 +310,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: _downloading ? null : () async {
                       setS(() { _downloading = true; _dlError = null; });
                       try {
+                        // Guardar versión para no volver a preguntar
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setString('last_update_notified', info.version);
                         await UpdateService.downloadAndInstall(
                           info.apkUrl,
                           (p) => setS(() => _progress = p),
