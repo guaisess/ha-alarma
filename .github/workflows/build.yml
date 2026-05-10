@@ -43,15 +43,38 @@ jobs:
       - name: Patch AndroidManifest
         run: |
           MANIFEST=${{ env.PROJECT_DIR }}/android/app/src/main/AndroidManifest.xml
-          # Permitir HTTP y permisos necesarios
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
           sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"\/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"\/>' $MANIFEST
-          echo "--- Manifest ---"
-          cat $MANIFEST
+
+      - name: Setup keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ env.PROJECT_DIR }}/android/app/ha_alarm.jks
+          cat >> ${{ env.PROJECT_DIR }}/android/app/build.gradle << 'GRADLE'
+
+android {
+    signingConfigs {
+        release {
+            storeFile file("ha_alarm.jks")
+            storePassword "${{ secrets.KEYSTORE_PASSWORD }}"
+            keyAlias "${{ secrets.KEY_ALIAS }}"
+            keyPassword "${{ secrets.KEY_PASSWORD }}"
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+        }
+    }
+}
+GRADLE
 
       - name: Get dependencies
         working-directory: ${{ env.PROJECT_DIR }}
         run: flutter pub get
+
+      - name: Generate launcher icons
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: dart run flutter_launcher_icons
 
       - name: Build APK
         working-directory: ${{ env.PROJECT_DIR }}
