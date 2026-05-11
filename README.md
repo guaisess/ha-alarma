@@ -170,3 +170,36 @@ La app comprueba en cada arranque si hay una versión nueva disponible.
 ## Licencia
 
 Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
+
+
+---
+
+## 📋 Historial de versiones
+
+### v1.0.7
+- 🐛 Corregida pantalla de configuración que aparecía al arrancar aunque los datos estuvieran guardados
+- 🐛 Sensores abiertos solo se muestran en estados relevantes (`arming`, `triggered`), no cuando la alarma está en reposo
+
+### v1.0.6
+- 🌐 Interfaz completamente en español (menús de copiar, pegar, seleccionar...)
+- 🐛 Corregida persistencia incorrecta del aviso de sensores abiertos al actualizar estado
+
+### v1.0.5
+- ℹ️ Nueva pantalla "Acerca de" con versión, desarrollador y tecnologías
+- ⏱️ Cuenta atrás visual durante el armado (`arming`) y la entrada (`pending`)
+- 🚪 Aviso de sensores abiertos que bloquean el armado
+
+### v1.0.3
+- 🔄 Sistema de actualizaciones automáticas con barra de progreso
+- 🎨 Icono personalizado (casa con escudo plateado)
+- 🔧 Corrección de textos en botones de configuración
+
+### v1.0.2
+- 🔒 Firma permanente del APK (sin conflictos al actualizar)
+- 📦 Release automático en GitHub Actions
+- 🌐 Soporte HTTP y HTTPS en la conexión
+
+### v1.0.1
+- 🚀 Primera versión funcional
+- Panel con estados Armar/Desarmar y confirmación
+- Configuración de URL, token, entity ID y código
