@@ -235,6 +235,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Config?         _config;
   AlarmStateData? _stateData;
+  bool            _configLoaded = false;   // ← distingue cargando vs sin config
   bool            _loading    = true;
   bool            _actionBusy = false;
   String?         _error;
@@ -246,6 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _init() async {
     _config = await Config.load();
+    setState(() => _configLoaded = true);
     if (_config!.isValid) {
       await _refresh();
       _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) => _refresh());
@@ -396,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _pollTimer?.cancel(); _countdownTimer?.cancel();
     await Navigator.push(context, MaterialPageRoute(builder: (_) => const ConfigScreen()));
     _config = null;
-    setState(() { _loading = true; _stateData = null; _error = null; });
+    setState(() { _loading = true; _configLoaded = false; _stateData = null; _error = null; });
     _init();
   }
 
@@ -422,7 +424,9 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(icon: const Icon(Icons.settings_outlined, color: kSubtext), onPressed: _goConfig),
         ],
       ),
-      body: !(_config?.isValid ?? false)
+      body: !_configLoaded
+          ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: kBlue))
+          : !(_config?.isValid ?? false)
           ? _NoConfig(onConfig: _goConfig)
           : Padding(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
