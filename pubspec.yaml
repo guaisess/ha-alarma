@@ -1,13 +1,15 @@
 name: ha_alarm
 description: Home Assistant Alarm Control
 publish_to: none
-version: 1.0.5+5
+version: 1.0.6+6
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
   http: ^1.2.0
   shared_preferences: ^2.2.2
@@ -30,5 +32,6 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
     - assets/icon.png

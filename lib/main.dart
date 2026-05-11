@@ -9,6 +9,7 @@ import 'package:dio/dio.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,6 +81,15 @@ class AlarmApp extends StatelessWidget {
     return MaterialApp(
       title: 'Alarma',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es', 'ES'),
+      ],
+      locale: const Locale('es', 'ES'),
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: kBg,
         colorScheme: const ColorScheme.dark(surface: kSurface, primary: kBlue),
@@ -447,8 +457,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       _CountdownBar(data: data, color: color),
                     ],
 
-                    // ── Sensores abiertos ──
-                    if (data != null && data.openSensors.isNotEmpty) ...[
+                    // ── Sensores abiertos (solo al armar o disparar) ──
+                    if (data != null && data.openSensors.isNotEmpty &&
+                        (state == AlarmState.arming || state == AlarmState.triggered)) ...[
                       const SizedBox(height: 14),
                       _OpenSensorsWarning(sensors: data.openSensors),
                     ],
