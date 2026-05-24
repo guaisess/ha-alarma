@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -10,9 +11,61 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'firebase_options.dart';
+
+// ─── Notificaciones locales (instancia global) ────────────────
+final FlutterLocalNotificationsPlugin _localNotifications =
+    FlutterLocalNotificationsPlugin();
+
+// ─── Handler de mensajes Firebase en background ───────────────
+// Debe ser función top-level (fuera de cualquier clase)
+@pragma('vm:entry-point')
+Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final n = message.notification;
+  if (n == null) return;
+  await _localNotifications.show(
+    message.hashCode,
+    n.title ?? 'Alarma Casa HA',
+    n.body,
+    const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'ha_alarm_channel', 'Alarma Casa HA',
+        channelDescription: 'Notificaciones de estado de la alarma',
+        importance: Importance.max,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+      ),
+    ),
+  );
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+
+  // Inicializar notificaciones locales
+  const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+  await _localNotifications.initialize(
+    const InitializationSettings(android: androidSettings),
+  );
+
+  // Crear canal de notificaciones (Android 8+)
+  const channel = AndroidNotificationChannel(
+    'ha_alarm_channel', 'Alarma Casa HA',
+    description: 'Notificaciones de estado de la alarma',
+    importance: Importance.max,
+  );
+  await _localNotifications
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel);
+
   runApp(const AlarmApp());
 }
 
@@ -255,6 +308,52 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _loading = false);
     }
     if (_config!.updateUrl.isNotEmpty) _checkUpdate();
+    _initNotifications();
+  }
+
+  // ─── Firebase Messaging ───────────────────────────────────────
+  Future<void> _initNotifications() async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+
+      // Solicitar permiso (Android 13+ lo pide al usuario)
+      await messaging.requestPermission(alert: true, badge: true, sound: true);
+
+      // Obtener token y guardarlo en preferencias
+      final token = await messaging.getToken();
+      if (token != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('fcm_token', token);
+      }
+
+      // Refrescar token si Firebase lo renueva
+      messaging.onTokenRefresh.listen((newToken) async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('fcm_token', newToken);
+      });
+
+      // Mensajes recibidos con la app en primer plano
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        final n = message.notification;
+        if (n == null) return;
+        _localNotifications.show(
+          message.hashCode,
+          n.title ?? 'Alarma Casa HA',
+          n.body,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'ha_alarm_channel', 'Alarma Casa HA',
+              channelDescription: 'Notificaciones de estado de la alarma',
+              importance: Importance.max,
+              priority: Priority.high,
+              icon: '@mipmap/ic_launcher',
+            ),
+          ),
+        );
+      });
+    } catch (_) {
+      // Si Firebase no está configurado todavía, no interrumpe la app
+    }
   }
 
   Future<void> _refresh() async {
@@ -634,12 +733,17 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  String _version = '...';
+  String _version  = '...';
+  String _fcmToken = 'Cargando...';
 
   @override
   void initState() {
     super.initState();
     PackageInfo.fromPlatform().then((i) => setState(() => _version = '${i.version} (build ${i.buildNumber})'));
+    SharedPreferences.getInstance().then((prefs) {
+      final token = prefs.getString('fcm_token');
+      setState(() => _fcmToken = token ?? 'No disponible — abre la app una vez con Firebase configurado');
+    });
   }
 
   @override
@@ -692,6 +796,40 @@ class _AboutScreenState extends State<AboutScreen> {
             _AboutItem(icon: Icons.hub_rounded,        label: 'Plataforma',   value: 'Home Assistant + Alarmo'),
             _AboutItem(icon: Icons.build_circle_rounded, label: 'CI/CD',      value: 'GitHub Actions'),
           ]),
+
+          const SizedBox(height: 16),
+
+          // ── Token FCM ─────────────────────────────────────────
+          Container(
+            decoration: BoxDecoration(color: kSurface, borderRadius: BorderRadius.circular(18)),
+            padding: const EdgeInsets.all(18),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                const Icon(Icons.notifications_rounded, color: kBlue, size: 20),
+                const SizedBox(width: 10),
+                const Text('Token FCM', style: TextStyle(color: kSubtext, fontSize: 11)),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.copy_rounded, color: kSubtext, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: 'Copiar token',
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: _fcmToken));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Token copiado'), duration: Duration(seconds: 2)));
+                  },
+                ),
+              ]),
+              const SizedBox(height: 8),
+              Text(_fcmToken,
+                  style: const TextStyle(color: kText, fontSize: 11, fontFamily: 'monospace'),
+                  maxLines: 3, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 6),
+              const Text('Úsalo en Home Assistant para enviar notificaciones push',
+                  style: TextStyle(color: kSubtext, fontSize: 10)),
+            ]),
+          ),
 
           const SizedBox(height: 32),
 

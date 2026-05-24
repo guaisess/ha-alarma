@@ -107,6 +107,83 @@ Al abrirla por primera vez aparece la pantalla de configuración. Pulsa el icono
 
 ---
 
+## Notificaciones push (Firebase)
+
+La app puede recibir notificaciones push desde Home Assistant cuando cambia el estado de la alarma.
+
+### 1. Crear proyecto en Firebase
+
+1. Ve a [Firebase Console](https://console.firebase.google.com) y crea un proyecto
+2. Añade una app Android con el package name `com.homeassistant.ha_alarm`
+3. Descarga el `google-services.json`
+
+### 2. Configurar el repositorio
+
+**Secreto de GitHub** (Settings → Secrets and variables → Actions):
+
+| Nombre | Valor |
+|---|---|
+| `GOOGLE_SERVICES_JSON_BASE64` | `cat google-services.json \| base64` (en tu terminal) |
+
+**Archivo `lib/firebase_options.dart`** — rellena los valores del `google-services.json`:
+
+```dart
+static const FirebaseOptions android = FirebaseOptions(
+  apiKey:            '...',   // api_key[0].current_key
+  appId:             '...',   // client_info.mobilesdk_app_id
+  messagingSenderId: '...',   // project_info.project_number
+  projectId:         '...',   // project_info.project_id
+  storageBucket:     '....firebasestorage.app',
+);
+```
+
+### 3. Obtener el token FCM
+
+Una vez instalada la app con Firebase configurado, ve a **Acerca de** — verás el token FCM con un botón para copiarlo. Este token identifica tu dispositivo.
+
+### 4. Configurar Home Assistant
+
+Añade en tu `configuration.yaml`:
+
+```yaml
+rest_command:
+  notify_alarma:
+    url: "https://fcm.googleapis.com/v1/projects/TU_PROJECT_ID/messages:send"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ token }}"
+      Content-Type: "application/json"
+    payload: >
+      {
+        "message": {
+          "token": "TU_TOKEN_FCM",
+          "notification": {
+            "title": "{{ title }}",
+            "body": "{{ body }}"
+          }
+        }
+      }
+```
+
+Y una automatización que se dispare al cambiar el estado de la alarma:
+
+```yaml
+automation:
+  - alias: "Notificación alarma"
+    trigger:
+      - platform: state
+        entity_id: alarm_control_panel.alarmo
+    action:
+      - service: rest_command.notify_alarma
+        data:
+          title: "Alarma Casa"
+          body: "Estado: {{ trigger.to_state.state }}"
+```
+
+> ⚠️ Para la autenticación OAuth2 de FCM v1 API necesitarás un script o integración adicional. La forma más sencilla para uso personal es usar el paquete `pyfcm` en un script de HA o la integración [FCM Notification](https://www.home-assistant.io/integrations/).
+
+---
+
 ## Sistema de actualizaciones automáticas
 
 La app comprueba en cada arranque si hay una versión nueva disponible.
@@ -176,8 +253,14 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.1.9
+- 🏠 Nuevos modos de armado: **Armado en casa** (`armed_home`) y **Armado noche** (`armed_night`)
+- 🎨 Iconos y colores diferenciados para cada modo de armado (naranja para Casa, morado para Noche)
+- 🔄 Actualización de la tabla de estados con los nuevos modos
+
 ### v1.0.8
 - 🐛 Corregida visualización de sensores abiertos cuando Alarmo bloquea el armado y vuelve a estado `disarmed`
+- 🔔 Soporte para notificaciones push via Firebase Cloud Messaging (FCM)
 
 ### v1.0.7
 - 🐛 Corregida pantalla de configuración que aparecía al arrancar aunque los datos estuvieran guardados
