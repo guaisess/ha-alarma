@@ -253,6 +253,9 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.1.10
+- 🐛 Corregida notificación push duplicada (FCM ya muestra automáticamente en background)
+
 ### v1.1.9
 - 🏠 Nuevos modos de armado: **Armado en casa** (`armed_home`) y **Armado noche** (`armed_night`)
 - 🎨 Iconos y colores diferenciados para cada modo de armado (naranja para Casa, morado para Noche)

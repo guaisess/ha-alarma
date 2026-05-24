@@ -21,26 +21,11 @@ final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
 
 // ─── Handler de mensajes Firebase en background ───────────────
-// Debe ser función top-level (fuera de cualquier clase)
+// FCM ya muestra automáticamente la notificación del sistema cuando la app
+// está en background o cerrada — aquí solo inicializamos sin duplicar.
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  final n = message.notification;
-  if (n == null) return;
-  await _localNotifications.show(
-    message.hashCode,
-    n.title ?? 'Alarma Casa HA',
-    n.body,
-    const NotificationDetails(
-      android: AndroidNotificationDetails(
-        'ha_alarm_channel', 'Alarma Casa HA',
-        channelDescription: 'Notificaciones de estado de la alarma',
-        importance: Importance.max,
-        priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
-      ),
-    ),
-  );
 }
 
 void main() async {
