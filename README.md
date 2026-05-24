@@ -176,6 +176,9 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.0.8
+- 🐛 Corregida visualización de sensores abiertos cuando Alarmo bloquea el armado y vuelve a estado `disarmed`
+
 ### v1.0.7
 - 🐛 Corregida pantalla de configuración que aparecía al arrancar aunque los datos estuvieran guardados
 - 🐛 Sensores abiertos solo se muestran en estados relevantes (`arming`, `triggered`), no cuando la alarma está en reposo

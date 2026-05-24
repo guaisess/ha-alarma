@@ -461,9 +461,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       _CountdownBar(data: data, color: color),
                     ],
 
-                    // ── Sensores abiertos (solo al armar o disparar) ──
+                    // ── Sensores abiertos (al armar, disparar o si el armado fue bloqueado) ──
                     if (data != null && data.openSensors.isNotEmpty &&
-                        (state == AlarmState.arming || state == AlarmState.triggered)) ...[
+                        (state == AlarmState.arming || state == AlarmState.triggered || state == AlarmState.disarmed)) ...[
                       const SizedBox(height: 14),
                       _OpenSensorsWarning(sensors: data.openSensors),
                     ],
