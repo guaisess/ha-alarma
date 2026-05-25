@@ -253,6 +253,12 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.1.12
+- ⚡ Timeout de conexión reducido de 10s a 5s para detectar fallos antes
+- ⚡ Delay entre reintentos reducido de 2s a 1s
+- 🔁 El timer de refresco automático arranca en paralelo al primer intento, sin esperar a que fallen todos los reintentos
+- 🛡️ Protección contra llamadas simultáneas al servidor
+
 ### v1.1.11
 - 🔄 Refresco automático al volver de pantalla bloqueada (detección de ciclo de vida)
 - 🔁 Reintentos automáticos (hasta 3) antes de mostrar "Sin conexión"
