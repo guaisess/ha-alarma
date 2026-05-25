@@ -21,8 +21,6 @@ final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
 
 // ─── Handler de mensajes Firebase en background ───────────────
-// FCM ya muestra automáticamente la notificación del sistema cuando la app
-// está en background o cerrada — aquí solo inicializamos sin duplicar.
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -31,17 +29,14 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializar Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
 
-  // Inicializar notificaciones locales
   const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
   await _localNotifications.initialize(
     const InitializationSettings(android: androidSettings),
   );
 
-  // Crear canal de notificaciones (Android 8+)
   const channel = AndroidNotificationChannel(
     'ha_alarm_channel', 'Alarma Casa HA',
     description: 'Notificaciones de estado de la alarma',
@@ -177,7 +172,7 @@ class HaService {
 
   Future<AlarmStateData> getState() async {
     final uri = Uri.parse('${config.url}/api/states/${config.entityId}');
-    final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 10));
+    final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 5));
     if (res.statusCode != 200) throw Exception('Error ${res.statusCode}');
 
     final data       = jsonDecode(res.body);
@@ -185,13 +180,11 @@ class HaService {
     final attrs      = data['attributes'] as Map<String, dynamic>? ?? {};
     final lastChanged = DateTime.parse(data['last_changed'] as String).toLocal();
 
-    // Delay: Alarmo lo provee en segundos
     int? delay;
     if (attrs.containsKey('delay')) {
       delay = (attrs['delay'] as num?)?.toInt();
     }
 
-    // Sensores abiertos que bloquearon el armado
     List<String> openSensors = [];
     if (attrs.containsKey('open_sensors')) {
       final raw = attrs['open_sensors'];
@@ -211,7 +204,7 @@ class HaService {
   Future<void> _call(String service, Map<String, dynamic> extra) async {
     final uri  = Uri.parse('${config.url}/api/services/alarm_control_panel/$service');
     final body = jsonEncode({'entity_id': config.entityId, ...extra});
-    final res  = await http.post(uri, headers: _headers, body: body).timeout(const Duration(seconds: 10));
+    final res  = await http.post(uri, headers: _headers, body: body).timeout(const Duration(seconds: 5));
     if (res.statusCode != 200 && res.statusCode != 201) throw Exception('Error ${res.statusCode}');
   }
 }
@@ -273,9 +266,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Config?         _config;
   AlarmStateData? _stateData;
-  bool            _configLoaded = false;   // ← distingue cargando vs sin config
+  bool            _configLoaded = false;
   bool            _loading    = true;
   bool            _actionBusy = false;
+  bool            _refreshing = false;
   String?         _error;
   Timer?          _pollTimer;
   Timer?          _countdownTimer;
@@ -290,7 +284,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Pequeño delay para que la red se estabilice tras desbloquear pantalla
       Future.delayed(const Duration(milliseconds: 800), _refresh);
     }
   }
@@ -299,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _config = await Config.load();
     setState(() => _configLoaded = true);
     if (_config!.isValid) {
-      await _refresh();
+      _refresh(); // sin await — arranca en paralelo con el timer
       _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) => _refresh());
     } else {
       setState(() => _loading = false);
@@ -313,23 +306,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     try {
       final messaging = FirebaseMessaging.instance;
 
-      // Solicitar permiso (Android 13+ lo pide al usuario)
       await messaging.requestPermission(alert: true, badge: true, sound: true);
 
-      // Obtener token y guardarlo en preferencias
       final token = await messaging.getToken();
       if (token != null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('fcm_token', token);
       }
 
-      // Refrescar token si Firebase lo renueva
       messaging.onTokenRefresh.listen((newToken) async {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('fcm_token', newToken);
       });
 
-      // Mensajes recibidos con la app en primer plano
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         final n = message.notification;
         if (n == null) return;
@@ -348,30 +337,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         );
       });
-    } catch (_) {
-      // Si Firebase no está configurado todavía, no interrumpe la app
-    }
+    } catch (_) {}
   }
 
   Future<void> _refresh() async {
-    if (_config == null || !_config!.isValid) return;
+    if (_config == null || !_config!.isValid || _refreshing) return;
+    _refreshing = true;
     const maxRetries = 3;
-    for (int attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        final data = await HaService(_config!).getState();
-        if (mounted) {
-          setState(() { _stateData = data; _loading = false; _error = null; });
-          _updateCountdownTimer(data);
-        }
-        return;
-      } catch (_) {
-        if (attempt == maxRetries) {
-          // Solo muestra error tras agotar los 3 intentos
-          if (mounted) setState(() { _error = 'Sin conexión'; _loading = false; });
-        } else {
-          await Future.delayed(const Duration(seconds: 2));
+    try {
+      for (int attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          final data = await HaService(_config!).getState();
+          if (mounted) {
+            setState(() { _stateData = data; _loading = false; _error = null; });
+            _updateCountdownTimer(data);
+          }
+          return;
+        } catch (_) {
+          if (attempt == maxRetries) {
+            if (mounted) setState(() { _error = 'Sin conexión'; _loading = false; });
+          } else {
+            await Future.delayed(const Duration(seconds: 1));
+          }
         }
       }
+    } finally {
+      _refreshing = false;
     }
   }
 
@@ -565,13 +556,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     else
                       Text(label, style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
 
-                    // ── Contador arming / pending ──
                     if (data != null && data.hasCountdown) ...[
                       const SizedBox(height: 14),
                       _CountdownBar(data: data, color: color),
                     ],
 
-                    // ── Sensores abiertos (al armar, disparar o si el armado fue bloqueado) ──
                     if (data != null && data.openSensors.isNotEmpty &&
                         (state == AlarmState.arming || state == AlarmState.triggered || state == AlarmState.disarmed)) ...[
                       const SizedBox(height: 14),
@@ -651,7 +640,6 @@ class _OpenSensorsWarning extends StatelessWidget {
   const _OpenSensorsWarning({required this.sensors});
 
   String _friendlyName(String entityId) {
-    // Convierte entity_id a nombre legible
     return entityId.split('.').last.replaceAll('_', ' ').split(' ')
         .map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '')
         .join(' ');
@@ -772,7 +760,6 @@ class _AboutScreenState extends State<AboutScreen> {
 
           const SizedBox(height: 12),
 
-          // Icono
           Container(
             width: 110, height: 110,
             decoration: BoxDecoration(
@@ -792,7 +779,6 @@ class _AboutScreenState extends State<AboutScreen> {
 
           const SizedBox(height: 32),
 
-          // Tarjeta info
           _AboutCard(items: const [
             _AboutItem(icon: Icons.person_rounded,      label: 'Desarrollador', value: 'Alfredo Fernández Badía'),
             _AboutItem(icon: Icons.home_work_rounded,   label: 'Proyecto',      value: 'Control de alarma para Home Assistant'),
@@ -810,7 +796,6 @@ class _AboutScreenState extends State<AboutScreen> {
 
           const SizedBox(height: 16),
 
-          // ── Token FCM ─────────────────────────────────────────
           Container(
             decoration: BoxDecoration(color: kSurface, borderRadius: BorderRadius.circular(18)),
             padding: const EdgeInsets.all(18),
