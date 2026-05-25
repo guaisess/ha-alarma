@@ -270,7 +270,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Config?         _config;
   AlarmStateData? _stateData;
   bool            _configLoaded = false;   // ← distingue cargando vs sin config
@@ -281,7 +281,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer?          _countdownTimer;
 
   @override
-  void initState() { super.initState(); _init(); }
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _init();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Pequeño delay para que la red se estabilice tras desbloquear pantalla
+      Future.delayed(const Duration(milliseconds: 800), _refresh);
+    }
+  }
 
   Future<void> _init() async {
     _config = await Config.load();
@@ -343,14 +355,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _refresh() async {
     if (_config == null || !_config!.isValid) return;
-    try {
-      final data = await HaService(_config!).getState();
-      if (mounted) {
-        setState(() { _stateData = data; _loading = false; _error = null; });
-        _updateCountdownTimer(data);
+    const maxRetries = 3;
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        final data = await HaService(_config!).getState();
+        if (mounted) {
+          setState(() { _stateData = data; _loading = false; _error = null; });
+          _updateCountdownTimer(data);
+        }
+        return;
+      } catch (_) {
+        if (attempt == maxRetries) {
+          // Solo muestra error tras agotar los 3 intentos
+          if (mounted) setState(() { _error = 'Sin conexión'; _loading = false; });
+        } else {
+          await Future.delayed(const Duration(seconds: 2));
+        }
       }
-    } catch (e) {
-      if (mounted) setState(() { _error = 'Sin conexión'; _loading = false; });
     }
   }
 
@@ -487,7 +508,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void dispose() { _pollTimer?.cancel(); _countdownTimer?.cancel(); super.dispose(); }
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pollTimer?.cancel();
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

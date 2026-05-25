@@ -253,6 +253,11 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.1.11
+- 🔄 Refresco automático al volver de pantalla bloqueada (detección de ciclo de vida)
+- 🔁 Reintentos automáticos (hasta 3) antes de mostrar "Sin conexión"
+- 🛡️ El último estado conocido se mantiene visible mientras se reintenta la conexión
+
 ### v1.1.10
 - 🐛 Corregida notificación push duplicada (FCM ya muestra automáticamente en background)
 
