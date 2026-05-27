@@ -176,9 +176,34 @@ automation:
     action:
       - service: rest_command.notify_alarma
         data:
-          title: "Alarma Casa"
-          body: "Estado: {{ trigger.to_state.state }}"
+          title: "🏡 Alarma Casa"
+          body: >
+            {% set hora = now().strftime('%H:%M') %}
+            {% set estados = {
+              'disarmed':    'Desarmada',
+              'armed_away':  'Armada',
+              'armed_home':  'Armada en casa',
+              'armed_night': 'Armada noche',
+              'arming':      'Armando...',
+              'pending':     'Entrada detectada',
+              'triggered':   '¡ALARMA DISPARADA!'
+            } %}
+            {% set estado = estados.get(trigger.to_state.state, trigger.to_state.state) %}
+            {% set usuario = trigger.to_state.attributes.get('changed_by', '') %}
+            {% set con_usuario = ['disarmed', 'armed_away', 'armed_home', 'armed_night'] %}
+            {{ hora }} — {{ estado }}{% if usuario and trigger.to_state.state in con_usuario %} ({{ usuario }}){% endif %}
 ```
+
+El resultado en cada notificación:
+
+| Evento | Notificación |
+|---|---|
+| Alguien arma | `14:32 — Armada (Alfredo)` |
+| Alguien desarma | `20:15 — Desarmada (María)` |
+| Cuenta atrás entrada | `03:47 — Entrada detectada` |
+| Alarma disparada | `03:49 — ¡ALARMA DISPARADA!` |
+
+> ℹ️ El campo `changed_by` lo proporciona Alarmo automáticamente con el nombre del usuario que ejecutó la acción. Solo aparece en armados y desarmados, no en estados automáticos como `triggered` o `pending`.
 
 > ⚠️ Para la autenticación OAuth2 de FCM v1 API necesitarás un script o integración adicional. La forma más sencilla para uso personal es usar el paquete `pyfcm` en un script de HA o la integración [FCM Notification](https://www.home-assistant.io/integrations/).
 
