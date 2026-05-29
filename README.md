@@ -253,9 +253,6 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
-### v1.2.1
-- 📱 Widget en la pantalla de inicio de Android (estado + hora de actualización)
-
 ### v1.2.0
 - 🎨 Tema claro, oscuro y seguir al sistema (configurable en ajustes)
 - 📳 Vibración + beep de confirmación al ejecutar acciones
