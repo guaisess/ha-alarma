@@ -106,6 +106,13 @@ jobs:
           echo "}" >> $GRADLE
           echo "android.buildTypes.release.signingConfig = android.signingConfigs.getByName('release_config')" >> $GRADLE
 
+      - name: Patch Kotlin version
+        run: |
+          ROOT_GRADLE=${{ env.PROJECT_DIR }}/android/build.gradle
+          sed -i "s/ext.kotlin_version = '[^']*'/ext.kotlin_version = '1.9.0'/" $ROOT_GRADLE
+          echo "Kotlin version patched:"
+          grep kotlin_version $ROOT_GRADLE
+
       - name: Install widget resources
         run: |
           # Recursos de layout y xml del widget
