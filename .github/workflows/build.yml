@@ -109,10 +109,23 @@ jobs:
       - name: Patch Kotlin version
         run: |
           SETTINGS=${{ env.PROJECT_DIR }}/android/settings.gradle
-          echo "--- settings.gradle ---"
-          cat $SETTINGS
-          sed -i "s/id \"org.jetbrains.kotlin.android\" version \"[^\"]*\"/id \"org.jetbrains.kotlin.android\" version \"1.9.0\"/" $SETTINGS
-          echo "--- settings.gradle tras parche ---"
+          # Parchear settings.gradle (Flutter 3.19+)
+          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "1.9.23"/' $SETTINGS
+          # Forzar resolución de kotlin-stdlib a 1.9.x en todos los subproyectos
+          cat >> ${{ env.PROJECT_DIR }}/android/build.gradle << 'GRADLE'
+
+          subprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force "org.jetbrains.kotlin:kotlin-stdlib:1.9.23"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-common:1.9.23"
+                  }
+              }
+          }
+          GRADLE
+          echo "settings.gradle:"
           cat $SETTINGS
 
       - name: Install widget resources
