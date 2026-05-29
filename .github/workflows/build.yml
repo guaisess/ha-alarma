@@ -108,44 +108,36 @@ jobs:
 
       - name: Patch Kotlin version
         run: |
+          ROOT_GRADLE=${{ env.PROJECT_DIR }}/android/build.gradle
+          echo "--- build.gradle antes del parche ---"
+          cat $ROOT_GRADLE
           python3 - << 'PYEOF'
           import os, re
 
           proj = os.environ.get('PROJECT_DIR', '.')
-          kotlin_ver = '1.9.0'
+          path = os.path.join(proj, 'android', 'build.gradle')
+          text = open(path).read()
 
-          # Parchear todos los build.gradle del proyecto Android
-          for root, dirs, files in os.walk(os.path.join(proj, 'android')):
-              for fname in files:
-                  if fname == 'build.gradle':
-                      path = os.path.join(root, fname)
-                      text = open(path).read()
-                      original = text
+          if 'ext.kotlin_version' in text:
+              # Reemplazar valor existente
+              text = re.sub(
+                  r"ext\.kotlin_version\s*=\s*'[^']*'",
+                  "ext.kotlin_version = '1.9.0'",
+                  text
+              )
+              print("Reemplazado ext.kotlin_version existente")
+          else:
+              # Añadir justo después de la primera línea de buildscript {
+              text = text.replace(
+                  'buildscript {',
+                  "buildscript {\n    ext.kotlin_version = '1.9.0'",
+                  1
+              )
+              print("Añadido ext.kotlin_version al buildscript")
 
-                      # Patrón 1: ext.kotlin_version = '...'
-                      text = re.sub(
-                          r"ext\.kotlin_version\s*=\s*'[^']*'",
-                          f"ext.kotlin_version = '{kotlin_ver}'",
-                          text
-                      )
-                      # Patrón 2: kotlin_version = '...' (sin ext.)
-                      text = re.sub(
-                          r"(?<!ext\.)kotlin_version\s*=\s*'[^']*'",
-                          f"kotlin_version = '{kotlin_ver}'",
-                          text
-                      )
-                      # Patrón 3: id 'org.jetbrains.kotlin.android' version '...'
-                      text = re.sub(
-                          r"(id\s+['\"]org\.jetbrains\.kotlin\.[^'\"]+['\"]\s+version\s+)['\"][^'\"]*['\"]",
-                          rf"\g<1>'{kotlin_ver}'",
-                          text
-                      )
-
-                      if text != original:
-                          open(path, 'w').write(text)
-                          print(f"Patched: {path}")
-                      else:
-                          print(f"No kotlin version found in: {path}")
+          open(path, 'w').write(text)
+          print("Resultado:")
+          print(open(path).read())
           PYEOF
 
       - name: Install widget resources
