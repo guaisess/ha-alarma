@@ -5,9 +5,8 @@
     android:orientation="vertical"
     android:gravity="center"
     android:padding="12dp"
-    android:background="@drawable/widget_background">
+    android:background="#CC1e293b">
 
-    <!-- Icono de estado -->
     <ImageView
         android:id="@+id/widget_icon"
         android:layout_width="36dp"
@@ -15,7 +14,6 @@
         android:src="@mipmap/ic_launcher"
         android:contentDescription="Estado" />
 
-    <!-- Texto del estado -->
     <TextView
         android:id="@+id/widget_state"
         android:layout_width="wrap_content"
@@ -27,7 +25,6 @@
         android:textColor="#F1F5F9"
         android:gravity="center" />
 
-    <!-- Hora de actualización -->
     <TextView
         android:id="@+id/widget_time"
         android:layout_width="wrap_content"

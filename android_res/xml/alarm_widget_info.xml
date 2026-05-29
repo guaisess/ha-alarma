@@ -7,5 +7,4 @@
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/alarm_widget"
     android:widgetCategory="home_screen"
-    android:resizeMode="horizontal|vertical"
-    android:description="@string/app_name" />
+    android:resizeMode="horizontal|vertical" />
