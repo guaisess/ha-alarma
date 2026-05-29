@@ -48,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _init() async {
+    await WidgetService.init();
     _config = await Config.load();
     setState(() => _configLoaded = true);
     if (_config!.isValid) {
@@ -119,6 +120,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               _error     = null;
             });
             _updateCountdownTimer(data);
+            WidgetService.update(data.state);
           }
           return;
         } catch (_) {

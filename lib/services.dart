@@ -9,6 +9,7 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:vibration/vibration.dart';
+import 'package:home_widget/home_widget.dart';
 import 'models.dart';
 
 // ─── Servicio Home Assistant ──────────────────────────────────
@@ -136,5 +137,43 @@ class UpdateService {
       if (total > 0) onProgress(recv / total);
     });
     await OpenFile.open(path);
+  }
+}
+
+// ─── Servicio de Widget Android ───────────────────────────────
+class WidgetService {
+  static const _appGroupId  = 'com.homeassistant.ha_alarm';
+  static const _widgetName  = 'AlarmWidget';
+
+  // Actualiza los datos que el widget lee
+  static Future<void> update(AlarmState state) async {
+    try {
+      final labels = {
+        AlarmState.disarmed:   'Desarmada',
+        AlarmState.armedAway:  'Armada',
+        AlarmState.armedHome:  'Armada (Casa)',
+        AlarmState.armedNight: 'Armada (Noche)',
+        AlarmState.arming:     'Armando...',
+        AlarmState.pending:    'Entrada...',
+        AlarmState.triggered:  '¡ALARMA!',
+        AlarmState.unknown:    'Sin conexión',
+      };
+      final now = DateTime.now();
+      final hora = '${now.hour.toString().padLeft(2,'0')}:${now.minute.toString().padLeft(2,'0')}';
+
+      await HomeWidget.saveWidgetData<String>('state_label', labels[state] ?? '—');
+      await HomeWidget.saveWidgetData<String>('state_key',   state.name);
+      await HomeWidget.saveWidgetData<String>('updated_at',  hora);
+      await HomeWidget.updateWidget(
+        androidName: _widgetName,
+        qualifiedAndroidName: '$_appGroupId.$_widgetName',
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> init() async {
+    try {
+      await HomeWidget.setAppGroupId(_appGroupId);
+    } catch (_) {}
   }
 }
