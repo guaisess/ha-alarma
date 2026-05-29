@@ -106,6 +106,15 @@ jobs:
           echo "}" >> $GRADLE
           echo "android.buildTypes.release.signingConfig = android.signingConfigs.getByName('release_config')" >> $GRADLE
 
+      - name: Patch Kotlin version
+        run: |
+          SETTINGS=${{ env.PROJECT_DIR }}/android/settings.gradle
+          echo "--- settings.gradle ---"
+          cat $SETTINGS
+          sed -i "s/id \"org.jetbrains.kotlin.android\" version \"[^\"]*\"/id \"org.jetbrains.kotlin.android\" version \"1.9.0\"/" $SETTINGS
+          echo "--- settings.gradle tras parche ---"
+          cat $SETTINGS
+
       - name: Install widget resources
         run: |
           # Recursos de layout y xml del widget
