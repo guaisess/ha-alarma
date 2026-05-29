@@ -54,13 +54,46 @@ jobs:
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
           sed -i 's/android:label="ha_alarm"/android:label="Alarma Casa"/' $MANIFEST
           sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"\/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"\/>' $MANIFEST
+          # Registrar el widget receiver antes de </application>
+          sed -i 's/<\/application>/    <receiver android:name=".AlarmWidget" android:exported="true">\n            <intent-filter>\n                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"\/>\n            <\/intent-filter>\n            <meta-data\n                android:name="android.appwidget.provider"\n                android:resource="@xml\/alarm_widget_info"\/>\n        <\/receiver>\n    <\/application>/' $MANIFEST
+
+      - name: Inject Firebase options
+        env:
+          FIREBASE_API_KEY:          ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_APP_ID:           ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_MESSAGING_SENDER: ${{ secrets.FIREBASE_MESSAGING_SENDER }}
+          FIREBASE_PROJECT_ID:       ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET:   ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+        run: |
+          cat > ${{ env.PROJECT_DIR }}/lib/firebase_options.dart << EOF
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => android;
+
+            static const FirebaseOptions android = FirebaseOptions(
+              apiKey:            '$FIREBASE_API_KEY',
+              appId:             '$FIREBASE_APP_ID',
+              messagingSenderId: '$FIREBASE_MESSAGING_SENDER',
+              projectId:         '$FIREBASE_PROJECT_ID',
+              storageBucket:     '$FIREBASE_STORAGE_BUCKET',
+            );
+          }
+          EOF
+
+      - name: Setup Google Services JSON
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode \
+            > ${{ env.PROJECT_DIR }}/android/app/google-services.json
 
       - name: Setup keystore and signing
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64:   ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS:         ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD:      ${{ secrets.KEY_PASSWORD }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > ${{ env.PROJECT_DIR }}/android/app/ha_alarm.jks
           GRADLE=${{ env.PROJECT_DIR }}/android/app/build.gradle
@@ -72,6 +105,20 @@ jobs:
           echo "    keyPassword '$KEY_PASSWORD'" >> $GRADLE
           echo "}" >> $GRADLE
           echo "android.buildTypes.release.signingConfig = android.signingConfigs.getByName('release_config')" >> $GRADLE
+
+      - name: Install widget resources
+        run: |
+          # Recursos de layout y xml del widget
+          mkdir -p ${{ env.PROJECT_DIR }}/android/app/src/main/res/layout
+          mkdir -p ${{ env.PROJECT_DIR }}/android/app/src/main/res/xml
+          cp ${{ env.PROJECT_DIR }}/android_res/layout/alarm_widget.xml \
+             ${{ env.PROJECT_DIR }}/android/app/src/main/res/layout/alarm_widget.xml
+          cp ${{ env.PROJECT_DIR }}/android_res/xml/alarm_widget_info.xml \
+             ${{ env.PROJECT_DIR }}/android/app/src/main/res/xml/alarm_widget_info.xml
+          # Receiver Kotlin
+          KOTLIN_DIR=${{ env.PROJECT_DIR }}/android/app/src/main/kotlin/com/homeassistant/ha_alarm
+          mkdir -p $KOTLIN_DIR
+          cp ${{ env.PROJECT_DIR }}/android_res/AlarmWidget.kt $KOTLIN_DIR/AlarmWidget.kt
 
       - name: Get dependencies
         working-directory: ${{ env.PROJECT_DIR }}
