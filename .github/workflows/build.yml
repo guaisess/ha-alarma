@@ -27,7 +27,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
+          flutter-version: '3.24.0'
           channel: 'stable'
 
       - name: Find project root
@@ -105,40 +105,6 @@ jobs:
           echo "    keyPassword '$KEY_PASSWORD'" >> $GRADLE
           echo "}" >> $GRADLE
           echo "android.buildTypes.release.signingConfig = android.signingConfigs.getByName('release_config')" >> $GRADLE
-
-      - name: Patch Kotlin version
-        run: |
-          ROOT_GRADLE=${{ env.PROJECT_DIR }}/android/build.gradle
-          echo "--- build.gradle antes del parche ---"
-          cat $ROOT_GRADLE
-          python3 - << 'PYEOF'
-          import os, re
-
-          proj = os.environ.get('PROJECT_DIR', '.')
-          path = os.path.join(proj, 'android', 'build.gradle')
-          text = open(path).read()
-
-          if 'ext.kotlin_version' in text:
-              # Reemplazar valor existente
-              text = re.sub(
-                  r"ext\.kotlin_version\s*=\s*'[^']*'",
-                  "ext.kotlin_version = '1.9.0'",
-                  text
-              )
-              print("Reemplazado ext.kotlin_version existente")
-          else:
-              # Añadir justo después de la primera línea de buildscript {
-              text = text.replace(
-                  'buildscript {',
-                  "buildscript {\n    ext.kotlin_version = '1.9.0'",
-                  1
-              )
-              print("Añadido ext.kotlin_version al buildscript")
-
-          open(path, 'w').write(text)
-          print("Resultado:")
-          print(open(path).read())
-          PYEOF
 
       - name: Install widget resources
         run: |
