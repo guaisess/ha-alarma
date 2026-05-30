@@ -141,8 +141,10 @@ class UpdateService {
 }
 
 // ─── Servicio de Widget Android ───────────────────────────────
+// Usa SharedPreferences para pasar datos al widget nativo (AppWidgetProvider)
+// y METHOD_CHANNEL para disparar el update broadcast desde Flutter
 class WidgetService {
-  static const _pkg = 'com.homeassistant.ha_alarm';
+  static const _channel = MethodChannel('com.homeassistant.ha_alarm/widget');
 
   static const _labels = {
     AlarmState.disarmed:   'Desarmada',
@@ -160,18 +162,14 @@ class WidgetService {
       final now  = DateTime.now();
       final hora = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
-      await HomeWidget.saveWidgetData<String>('state_label', _labels[state] ?? '—');
-      await HomeWidget.saveWidgetData<String>('state_key',   state.name);
-      await HomeWidget.saveWidgetData<String>('updated_at',  hora);
+      // Guardar datos donde los lee el AppWidgetProvider nativo
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('widget_state_label', _labels[state] ?? '—');
+      await prefs.setString('widget_state_key',   state.name);
+      await prefs.setString('widget_updated_at',  hora);
 
-      await HomeWidget.updateWidget(
-        androidName: 'AlarmWidget',
-        qualifiedAndroidName: '$_pkg.AlarmWidget',
-      );
-      await HomeWidget.updateWidget(
-        androidName: 'AlarmWidgetWide',
-        qualifiedAndroidName: '$_pkg.AlarmWidgetWide',
-      );
+      // Disparar update del widget via MethodChannel
+      await _channel.invokeMethod('updateWidget');
     } catch (_) {}
   }
 

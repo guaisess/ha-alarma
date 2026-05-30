@@ -2,15 +2,20 @@ package com.homeassistant.ha_alarm
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.widget.RemoteViews
 import android.app.PendingIntent
 
-// ─── Utilidades compartidas ───────────────────────────────────
-
-private fun getWidgetPrefs(context: Context): SharedPreferences =
-    context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+// ─── SharedPreferences de Flutter (shared_preferences plugin) ─
+// El plugin guarda en: context.packageName + "_preferences"
+private fun getFlutterPrefs(context: Context): SharedPreferences =
+    context.getSharedPreferences(
+        "${context.packageName}_preferences",
+        Context.MODE_PRIVATE
+    )
 
 private fun colorForState(key: String): Int = when (key) {
     "disarmed"   -> android.graphics.Color.parseColor("#22c55e")
@@ -33,17 +38,16 @@ private fun launchIntent(context: Context): PendingIntent? {
 }
 
 // ─── Widget 2×2 ───────────────────────────────────────────────
-
 class AlarmWidget : AppWidgetProvider() {
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        val prefs      = getWidgetPrefs(context)
-        val stateLabel = prefs.getString("state_label", "Alarma Casa") ?: "Alarma Casa"
-        val updatedAt  = prefs.getString("updated_at",  "") ?: ""
-        val stateKey   = prefs.getString("state_key",   "unknown") ?: "unknown"
+        val prefs      = getFlutterPrefs(context)
+        val stateLabel = prefs.getString("flutter.widget_state_label", "Alarma Casa") ?: "Alarma Casa"
+        val updatedAt  = prefs.getString("flutter.widget_updated_at",  "") ?: ""
+        val stateKey   = prefs.getString("flutter.widget_state_key",   "unknown") ?: "unknown"
         val color      = colorForState(stateKey)
         val pending    = launchIntent(context)
 
@@ -57,20 +61,31 @@ class AlarmWidget : AppWidgetProvider() {
             appWidgetManager.updateAppWidget(id, views)
         }
     }
+
+    companion object {
+        fun updateAll(context: Context) {
+            val intent = Intent(context, AlarmWidget::class.java).apply {
+                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                val ids = AppWidgetManager.getInstance(context)
+                    .getAppWidgetIds(ComponentName(context, AlarmWidget::class.java))
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+            }
+            context.sendBroadcast(intent)
+        }
+    }
 }
 
 // ─── Widget 2×1 ───────────────────────────────────────────────
-
 class AlarmWidgetWide : AppWidgetProvider() {
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        val prefs      = getWidgetPrefs(context)
-        val stateLabel = prefs.getString("state_label", "Alarma Casa") ?: "Alarma Casa"
-        val updatedAt  = prefs.getString("updated_at",  "") ?: ""
-        val stateKey   = prefs.getString("state_key",   "unknown") ?: "unknown"
+        val prefs      = getFlutterPrefs(context)
+        val stateLabel = prefs.getString("flutter.widget_state_label", "Alarma Casa") ?: "Alarma Casa"
+        val updatedAt  = prefs.getString("flutter.widget_updated_at",  "") ?: ""
+        val stateKey   = prefs.getString("flutter.widget_state_key",   "unknown") ?: "unknown"
         val color      = colorForState(stateKey)
         val pending    = launchIntent(context)
 
@@ -85,6 +100,18 @@ class AlarmWidgetWide : AppWidgetProvider() {
                 views.setOnClickPendingIntent(R.id.widget_wide_icon,  pending)
             }
             appWidgetManager.updateAppWidget(id, views)
+        }
+    }
+
+    companion object {
+        fun updateAll(context: Context) {
+            val intent = Intent(context, AlarmWidgetWide::class.java).apply {
+                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                val ids = AppWidgetManager.getInstance(context)
+                    .getAppWidgetIds(ComponentName(context, AlarmWidgetWide::class.java))
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+            }
+            context.sendBroadcast(intent)
         }
     }
 }

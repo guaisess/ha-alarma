@@ -12,30 +12,14 @@ Desarrollada por **Alfredo Fernández Badía** · Bargas, Toledo · 2025
 - ✅ Estado en tiempo real (actualización automática cada 15s)
 - ✅ Cuenta atrás visual durante el armado y la entrada
 - ✅ Aviso de sensores abiertos que bloquean el armado
-- ✅ Pantalla de configuración con prueba de conexión
+- ✅ Pantalla de configuración con prueba de conexión y timeout configurable
 - ✅ Actualizaciones automáticas desde una URL configurable
-- ✅ Icono personalizado y tema oscuro
-
----
-
-## Capturas
-
-| Pantalla principal | Estado armando | Sensores abiertos | Configuración | Acerca de |
-|---|---|---|---|---|
-| Estado actual + botones Armar/Desarmar | Barra de cuenta atrás | Aviso en rojo con sensores | Conexión, token, código | Versión y datos del proyecto |
-
----
-
-## Requisitos
-
-### Home Assistant
-- Home Assistant instalado y accesible (local o remoto)
-- Integración [Alarmo](https://github.com/nielsfaber/alarmo) configurada
-- Un **Long-Lived Access Token** (perfil de usuario → al final de la página)
-
-### Para compilar
-- Cuenta en [GitHub](https://github.com) (gratuita)
-- Los 4 secretos de firma configurados en el repositorio (ver más abajo)
+- ✅ Tema claro, oscuro o seguir al sistema
+- ✅ Vibración y beep al ejecutar acciones
+- ✅ Historial local de cambios de estado (últimos 50)
+- ✅ Widget en la pantalla de inicio (2×2 y 2×1)
+- ✅ Notificaciones push via Firebase Cloud Messaging
+- ✅ Icono personalizado rojo carmesí con escudo y señal de alarma
 
 ---
 
@@ -45,13 +29,31 @@ Desarrollada por **Alfredo Fernández Badía** · Bargas, Toledo · 2025
 ha-alarma/
 ├── .github/
 │   └── workflows/
-│       └── build.yml        # Pipeline de compilación y release
+│       └── build.yml              # Pipeline de compilación y release
+├── android_res/
+│   ├── layout/
+│   │   ├── alarm_widget.xml       # Layout widget 2×2
+│   │   └── alarm_widget_wide.xml  # Layout widget 2×1
+│   ├── xml/
+│   │   ├── alarm_widget_info.xml       # Metadatos widget 2×2
+│   │   └── alarm_widget_wide_info.xml  # Metadatos widget 2×1
+│   └── AlarmWidget.kt             # Receiver de ambos widgets
 ├── assets/
-│   └── icon.png             # Icono de la app (1024×1024)
+│   └── icon.png                   # Icono de la app (1024×1024)
 ├── lib/
-│   └── main.dart            # Código completo de la app
-├── pubspec.yaml             # Dependencias y versión
-├── version.json             # Control de versión para auto-update
+│   ├── main.dart                  # Punto de entrada y AlarmApp
+│   ├── constants.dart             # Colores y constantes
+│   ├── models.dart                # Modelos de datos e historial
+│   ├── services.dart              # HaService, FeedbackService, UpdateService, WidgetService
+│   ├── widgets.dart               # Widgets reutilizables
+│   ├── firebase_options.dart      # Configuración Firebase (generado en CI)
+│   └── screens/
+│       ├── home_screen.dart       # Pantalla principal
+│       ├── config_screen.dart     # Configuración
+│       ├── history_screen.dart    # Historial de estados
+│       └── about_screen.dart      # Acerca de
+├── pubspec.yaml                   # Dependencias y versión
+├── version.json                   # Control de versión para auto-update
 └── README.md
 ```
 
@@ -59,57 +61,72 @@ ha-alarma/
 
 ## Compilación con GitHub Actions
 
-El proyecto se compila completamente en la nube usando GitHub Actions. No es necesario instalar Flutter ni Android Studio.
+El proyecto se compila completamente en la nube. No es necesario instalar Flutter ni Android Studio.
 
-### 1. Secretos necesarios
+### Secretos necesarios
 
 Ve a tu repositorio → **Settings → Secrets and variables → Actions** y añade:
 
 | Nombre | Descripción |
 |---|---|
-| `KEYSTORE_BASE64` | Keystore en Base64 (generado una sola vez) |
+| `KEYSTORE_BASE64` | Keystore en Base64 |
 | `KEYSTORE_PASSWORD` | Contraseña del keystore |
 | `KEY_ALIAS` | Alias de la clave (`ha_alarm`) |
 | `KEY_PASSWORD` | Contraseña de la clave |
+| `GOOGLE_SERVICES_JSON_BASE64` | `google-services.json` en Base64 |
+| `FIREBASE_API_KEY` | API Key de Firebase |
+| `FIREBASE_APP_ID` | App ID de Firebase |
+| `FIREBASE_MESSAGING_SENDER` | Sender ID de Firebase |
+| `FIREBASE_PROJECT_ID` | Project ID de Firebase |
+| `FIREBASE_STORAGE_BUCKET` | Storage bucket de Firebase |
 
-> ⚠️ El keystore define la identidad de la app. Si se pierde o cambia, habrá que desinstalar la app en todos los dispositivos antes de instalar la nueva versión.
+> ⚠️ El keystore define la identidad de la app. Si se pierde, habrá que desinstalar en todos los dispositivos.
 
-### 2. Proceso de compilación
+### Proceso de compilación
 
 Al hacer `push` a `main` el workflow:
 
 1. Genera la estructura Android con `flutter create`
-2. Aplica permisos y configuración de red en el `AndroidManifest.xml`
-3. Firma el APK con el keystore permanente
-4. Genera el icono en todos los tamaños de Android
-5. Compila el APK en modo release
-6. Crea automáticamente un **GitHub Release** con el APK adjunto
-
-### 3. Descargar el APK
-
-Una vez completado el build:
-- Ve a la pestaña **Releases** del repositorio
-- Descarga el `app-release.apk` de la última versión
+2. Parchea `AndroidManifest.xml` (permisos, label, widgets)
+3. Inyecta las opciones de Firebase desde secrets
+4. Firma el APK con el keystore permanente
+5. Genera el icono en todos los tamaños
+6. Compila el APK en modo release
+7. Crea automáticamente un **GitHub Release** con el APK
 
 ---
 
 ## Configuración de la app
 
-Al abrirla por primera vez aparece la pantalla de configuración. Pulsa el icono ⚙️ en cualquier momento para acceder.
+Pulsa ⚙️ en cualquier momento para acceder a la configuración.
 
 | Campo | Descripción | Ejemplo |
 |---|---|---|
-| URL de Home Assistant | Dirección de tu servidor | `https://tu-servidor.es` |
+| URL de Home Assistant | Dirección del servidor | `https://tu-servidor.es` |
 | Token de acceso | Long-Lived Token de HA | `eyJhbGci...` |
 | Entity ID de la alarma | ID de la entidad Alarmo | `alarm_control_panel.alarmo` |
 | Código de desarmado | PIN de desarmado | `1234` |
+| Timeout de conexión | Segundos antes de error | `5` |
 | URL de version.json | Para actualizaciones automáticas | `https://tu-servidor.es/version.json` |
+| Tema | Claro / Oscuro / Sistema | Sistema |
+
+---
+
+## Widget en pantalla de inicio
+
+La app incluye dos widgets para añadir al escritorio de Android:
+
+| Widget | Tamaño | Contenido |
+|---|---|---|
+| Alarma Casa | 2×2 | Icono de estado, texto del estado, hora de actualización |
+| Alarma Casa Wide | 2×1 | Icono a la izquierda, estado y hora a la derecha |
+
+Para añadirlos: mantén pulsado en el escritorio → Widgets → busca "Alarma Casa".
+El widget se actualiza automáticamente cada vez que la app refresca el estado.
 
 ---
 
 ## Notificaciones push (Firebase)
-
-La app puede recibir notificaciones push desde Home Assistant cuando cambia el estado de la alarma.
 
 ### 1. Crear proyecto en Firebase
 
@@ -117,55 +134,22 @@ La app puede recibir notificaciones push desde Home Assistant cuando cambia el e
 2. Añade una app Android con el package name `com.homeassistant.ha_alarm`
 3. Descarga el `google-services.json`
 
-### 2. Configurar el repositorio
-
-**Secreto de GitHub** (Settings → Secrets and variables → Actions):
+### 2. Configurar secrets de GitHub
 
 | Nombre | Valor |
 |---|---|
-| `GOOGLE_SERVICES_JSON_BASE64` | `cat google-services.json \| base64` (en tu terminal) |
-
-**Archivo `lib/firebase_options.dart`** — rellena los valores del `google-services.json`:
-
-```dart
-static const FirebaseOptions android = FirebaseOptions(
-  apiKey:            '...',   // api_key[0].current_key
-  appId:             '...',   // client_info.mobilesdk_app_id
-  messagingSenderId: '...',   // project_info.project_number
-  projectId:         '...',   // project_info.project_id
-  storageBucket:     '....firebasestorage.app',
-);
-```
+| `GOOGLE_SERVICES_JSON_BASE64` | `cat google-services.json \| base64` |
+| `FIREBASE_API_KEY` | `client[0].api_key[0].current_key` |
+| `FIREBASE_APP_ID` | `client[0].client_info.mobilesdk_app_id` |
+| `FIREBASE_MESSAGING_SENDER` | `project_info.project_number` |
+| `FIREBASE_PROJECT_ID` | `project_info.project_id` |
+| `FIREBASE_STORAGE_BUCKET` | `project_info.storage_bucket` |
 
 ### 3. Obtener el token FCM
 
-Una vez instalada la app con Firebase configurado, ve a **Acerca de** — verás el token FCM con un botón para copiarlo. Este token identifica tu dispositivo.
+En **Acerca de** verás el token FCM con un botón para copiarlo.
 
-### 4. Configurar Home Assistant
-
-Añade en tu `configuration.yaml`:
-
-```yaml
-rest_command:
-  notify_alarma:
-    url: "https://fcm.googleapis.com/v1/projects/TU_PROJECT_ID/messages:send"
-    method: POST
-    headers:
-      Authorization: "Bearer {{ token }}"
-      Content-Type: "application/json"
-    payload: >
-      {
-        "message": {
-          "token": "TU_TOKEN_FCM",
-          "notification": {
-            "title": "{{ title }}",
-            "body": "{{ body }}"
-          }
-        }
-      }
-```
-
-Y una automatización que se dispare al cambiar el estado de la alarma:
+### 4. Automatización en Home Assistant
 
 ```yaml
 automation:
@@ -176,34 +160,33 @@ automation:
     action:
       - service: rest_command.notify_alarma
         data:
-          title: "Alarma Casa"
-          body: "Estado: {{ trigger.to_state.state }}"
+          title: "🏡 Alarma Casa"
+          body: >
+            {% set hora = now().strftime('%H:%M') %}
+            {% set estados = {
+              'disarmed':    'Desarmada',
+              'armed_away':  'Armada',
+              'armed_home':  'Armada en casa',
+              'armed_night': 'Armada noche',
+              'arming':      'Armando...',
+              'pending':     'Entrada detectada',
+              'triggered':   '¡ALARMA DISPARADA!'
+            } %}
+            {% set estado = estados.get(trigger.to_state.state, trigger.to_state.state) %}
+            {% set usuario = trigger.to_state.attributes.get('changed_by', '') %}
+            {{ hora }} — {{ estado }}{% if usuario and trigger.to_state.state in ['disarmed','armed_away','armed_home','armed_night'] %} ({{ usuario }}){% endif %}
 ```
-
-> ⚠️ Para la autenticación OAuth2 de FCM v1 API necesitarás un script o integración adicional. La forma más sencilla para uso personal es usar el paquete `pyfcm` en un script de HA o la integración [FCM Notification](https://www.home-assistant.io/integrations/).
 
 ---
 
 ## Sistema de actualizaciones automáticas
 
-La app comprueba en cada arranque si hay una versión nueva disponible.
-
-### Formato del `version.json`
-
 ```json
 {
-  "version": "1.0.3",
-  "url": "https://github.com/usuario/ha-alarma/releases/download/v1.0.3/app-release.apk"
+  "version": "1.2.7",
+  "url": "https://github.com/guaisess/ha-alarma/releases/download/v1.2.7/app-release.apk"
 }
 ```
-
-### Flujo de actualización
-
-1. La app descarga el `version.json` al arrancar
-2. Compara la versión remota con la instalada
-3. Si hay versión nueva → muestra diálogo con barra de progreso
-4. Descarga el APK e inicia la instalación automáticamente
-5. No vuelve a preguntar por la misma versión aunque se cierre la app
 
 ---
 
@@ -214,7 +197,9 @@ La app comprueba en cada arranque si hay una versión nueva disponible.
 | `disarmed` | 🟢 Verde | Desarmada |
 | `arming` | 🟠 Naranja | Armando — cuenta atrás de salida |
 | `armed_away` | 🔴 Rojo | Armada |
-| `pending` | 🟡 Amarillo | Entrada detectada — cuenta atrás antes de disparar |
+| `armed_home` | 🟠 Naranja | Armada en casa |
+| `armed_night` | 🟣 Morado | Armada noche |
+| `pending` | 🟡 Amarillo | Entrada detectada |
 | `triggered` | 🔴 Rojo | ¡Alarma disparada! |
 
 ---
@@ -223,13 +208,19 @@ La app comprueba en cada arranque si hay una versión nueva disponible.
 
 | Paquete | Versión | Uso |
 |---|---|---|
-| `http` | ^1.2.0 | Llamadas a la API REST de HA |
-| `shared_preferences` | ^2.2.2 | Almacenamiento de configuración |
-| `package_info_plus` | ^8.0.0 | Versión instalada de la app |
-| `dio` | ^5.4.0 | Descarga del APK con progreso |
-| `open_file` | ^3.3.2 | Instalación del APK descargado |
+| `http` | ^1.2.0 | API REST de HA |
+| `shared_preferences` | ^2.2.2 | Configuración local |
+| `package_info_plus` | ^8.0.0 | Versión instalada |
+| `dio` | ^5.4.0 | Descarga APK con progreso |
+| `open_file` | ^3.3.2 | Instalación del APK |
 | `path_provider` | ^2.1.2 | Ruta de almacenamiento |
-| `permission_handler` | ^11.3.0 | Permisos de Android |
+| `permission_handler` | ^11.3.0 | Permisos Android |
+| `firebase_core` | ^3.6.0 | Firebase base |
+| `firebase_messaging` | ^15.1.3 | Notificaciones push |
+| `flutter_local_notifications` | ^17.2.2 | Notificaciones locales |
+| `vibration` | ^3.1.0 | Feedback háptico |
+| `intl` | ^0.19.0 | Formato de fechas |
+| `home_widget` | ^0.6.0 | Widget en pantalla de inicio |
 | `flutter_launcher_icons` | ^0.13.1 | Generación del icono |
 
 ---
@@ -237,10 +228,10 @@ La app comprueba en cada arranque si hay una versión nueva disponible.
 ## Instalación inicial
 
 1. Descarga el APK del último release
-2. Copia el APK al móvil (cable, Drive, Telegram...)
-3. Ajustes del móvil → **Instalar apps de fuentes desconocidas** → activar
+2. Copia el APK al móvil
+3. Ajustes → **Instalar apps de fuentes desconocidas** → activar
 4. Abre el APK e instala
-5. Abre la app y configura la conexión
+5. Configura la conexión
 
 ---
 
@@ -248,10 +239,19 @@ La app comprueba en cada arranque si hay una versión nueva disponible.
 
 Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
-
 ---
 
 ## 📋 Historial de versiones
+
+### v1.2.7
+- 🐛 Widget: corregido "Error al cargar" — eliminada dependencia de HomeWidgetProvider, actualización directa vía broadcast
+
+### v1.2.6
+- 🐛 Widget: reemplazado HomeWidgetProvider por AppWidgetProvider nativo
+
+### v1.2.5
+- 🐛 Widget: corregido tamaño en selector (minWidth/minHeight eliminados)
+- 🐛 Widget: valor por defecto "Alarma Casa" para evitar pantalla en blanco
 
 ### v1.2.4
 - 🐛 Corregido error de carga del widget (valores por defecto cuando no hay datos)
@@ -259,14 +259,14 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ### v1.2.3
 - 🎨 Nuevo icono: rojo carmesí con escudo, casa y señal de alarma
-- 📱 Widget 2×2 en la pantalla de inicio (estado con color e icono)
-- 📏 Widget 2×1 en la pantalla de inicio (icono + estado + hora)
+- 📱 Widget 2×2 en la pantalla de inicio
+- 📏 Widget 2×1 en la pantalla de inicio
 
 ### v1.2.2
 - 🐛 Corregido error de compilación del widget Android (Kotlin stdlib + recursos)
 
 ### v1.2.1
-- 📱 Widget en la pantalla de inicio de Android (estado + hora de actualización)
+- 📱 Widget en la pantalla de inicio de Android
 
 ### v1.2.0
 - 🎨 Tema claro, oscuro y seguir al sistema (configurable en ajustes)
@@ -277,44 +277,41 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 - 📋 Historial local de cambios de estado (últimos 50)
 
 ### v1.1.11
-- 🔄 Refresco automático al volver de pantalla bloqueada (detección de ciclo de vida)
+- 🔄 Refresco automático al volver de pantalla bloqueada
 - 🔁 Reintentos automáticos (hasta 3) antes de mostrar "Sin conexión"
-- 🛡️ El último estado conocido se mantiene visible mientras se reintenta la conexión
+- 🛡️ El último estado conocido se mantiene visible mientras se reintenta
 
 ### v1.1.10
-- 🐛 Corregida notificación push duplicada (FCM ya muestra automáticamente en background)
+- 🐛 Corregida notificación push duplicada
 
 ### v1.1.9
-- 🏠 Nuevos modos de armado: **Armado en casa** (`armed_home`) y **Armado noche** (`armed_night`)
-- 🎨 Iconos y colores diferenciados para cada modo de armado (naranja para Casa, morado para Noche)
+- 🏠 Nuevos modos: Armado en casa (`armed_home`) y Armado noche (`armed_night`)
+- 🎨 Iconos y colores diferenciados por modo
 
 ### v1.0.8
-- 🐛 Corregida visualización de sensores abiertos cuando Alarmo bloquea el armado
-- 🔔 Soporte para notificaciones push via Firebase Cloud Messaging (FCM)
+- 🐛 Corregida visualización de sensores abiertos
+- 🔔 Soporte para notificaciones push via FCM
 
 ### v1.0.7
-- 🐛 Corregida pantalla de configuración que aparecía al arrancar aunque los datos estuvieran guardados
-- 🐛 Sensores abiertos solo se muestran en estados relevantes
+- 🐛 Corregida pantalla de configuración al arrancar
+- 🐛 Sensores abiertos solo en estados relevantes
 
 ### v1.0.6
 - 🌐 Interfaz completamente en español
-- 🐛 Corregida persistencia incorrecta del aviso de sensores abiertos
+- 🐛 Corregida persistencia del aviso de sensores
 
 ### v1.0.5
-- ℹ️ Nueva pantalla "Acerca de" con versión, desarrollador y tecnologías
-- ⏱️ Cuenta atrás visual durante el armado (`arming`) y la entrada (`pending`)
-- 🚪 Aviso de sensores abiertos que bloquean el armado
+- ℹ️ Nueva pantalla "Acerca de"
+- ⏱️ Cuenta atrás visual en armado y entrada
+- 🚪 Aviso de sensores abiertos
 
 ### v1.0.3
-- 🔄 Sistema de actualizaciones automáticas con barra de progreso
+- 🔄 Actualizaciones automáticas con barra de progreso
 - 🎨 Icono personalizado
 
 ### v1.0.2
 - 🔒 Firma permanente del APK
 - 📦 Release automático en GitHub Actions
-- 🌐 Soporte HTTP y HTTPS
 
 ### v1.0.1
 - 🚀 Primera versión funcional
-- Panel con estados Armar/Desarmar y confirmación
-- Configuración de URL, token, entity ID y código
