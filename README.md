@@ -253,6 +253,21 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.2.4
+- 🐛 Corregido error de carga del widget (valores por defecto cuando no hay datos)
+- 📏 Corregido tamaño del widget 2×1 en el selector
+
+### v1.2.3
+- 🎨 Nuevo icono: rojo carmesí con escudo, casa y señal de alarma
+- 📱 Widget 2×2 en la pantalla de inicio (estado con color e icono)
+- 📏 Widget 2×1 en la pantalla de inicio (icono + estado + hora)
+
+### v1.2.2
+- 🐛 Corregido error de compilación del widget Android (Kotlin stdlib + recursos)
+
+### v1.2.1
+- 📱 Widget en la pantalla de inicio de Android (estado + hora de actualización)
+
 ### v1.2.0
 - 🎨 Tema claro, oscuro y seguir al sistema (configurable en ajustes)
 - 📳 Vibración + beep de confirmación al ejecutar acciones
@@ -272,19 +287,18 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 ### v1.1.9
 - 🏠 Nuevos modos de armado: **Armado en casa** (`armed_home`) y **Armado noche** (`armed_night`)
 - 🎨 Iconos y colores diferenciados para cada modo de armado (naranja para Casa, morado para Noche)
-- 🔄 Actualización de la tabla de estados con los nuevos modos
 
 ### v1.0.8
-- 🐛 Corregida visualización de sensores abiertos cuando Alarmo bloquea el armado y vuelve a estado `disarmed`
+- 🐛 Corregida visualización de sensores abiertos cuando Alarmo bloquea el armado
 - 🔔 Soporte para notificaciones push via Firebase Cloud Messaging (FCM)
 
 ### v1.0.7
 - 🐛 Corregida pantalla de configuración que aparecía al arrancar aunque los datos estuvieran guardados
-- 🐛 Sensores abiertos solo se muestran en estados relevantes (`arming`, `triggered`), no cuando la alarma está en reposo
+- 🐛 Sensores abiertos solo se muestran en estados relevantes
 
 ### v1.0.6
-- 🌐 Interfaz completamente en español (menús de copiar, pegar, seleccionar...)
-- 🐛 Corregida persistencia incorrecta del aviso de sensores abiertos al actualizar estado
+- 🌐 Interfaz completamente en español
+- 🐛 Corregida persistencia incorrecta del aviso de sensores abiertos
 
 ### v1.0.5
 - ℹ️ Nueva pantalla "Acerca de" con versión, desarrollador y tecnologías
@@ -293,13 +307,12 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ### v1.0.3
 - 🔄 Sistema de actualizaciones automáticas con barra de progreso
-- 🎨 Icono personalizado (casa con escudo plateado)
-- 🔧 Corrección de textos en botones de configuración
+- 🎨 Icono personalizado
 
 ### v1.0.2
-- 🔒 Firma permanente del APK (sin conflictos al actualizar)
+- 🔒 Firma permanente del APK
 - 📦 Release automático en GitHub Actions
-- 🌐 Soporte HTTP y HTTPS en la conexión
+- 🌐 Soporte HTTP y HTTPS
 
 ### v1.0.1
 - 🚀 Primera versión funcional
