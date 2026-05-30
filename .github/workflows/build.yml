@@ -54,8 +54,43 @@ jobs:
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
           sed -i 's/android:label="ha_alarm"/android:label="Alarma Casa"/' $MANIFEST
           sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"\/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"\/>' $MANIFEST
-          # Registrar el widget receiver antes de </application>
-          sed -i 's/<\/application>/    <receiver android:name=".AlarmWidget" android:exported="true">\n            <intent-filter>\n                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"\/>\n            <\/intent-filter>\n            <meta-data\n                android:name="android.appwidget.provider"\n                android:resource="@xml\/alarm_widget_info"\/>\n        <\/receiver>\n    <\/application>/' $MANIFEST
+          python3 << 'PYEOF'
+          import os
+          proj = os.environ['PROJECT_DIR']
+          path = f'{proj}/android/app/src/main/AndroidManifest.xml'
+          txt = open(path).read()
+          receivers = (
+              '    <receiver android:name=".AlarmWidget" android:exported="true">'
+              '<intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>'
+              '<meta-data android:name="android.appwidget.provider" android:resource="@xml/alarm_widget_info"/>'
+              '</receiver>\n'
+              '    <receiver android:name=".AlarmWidgetWide" android:exported="true">'
+              '<intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>'
+              '<meta-data android:name="android.appwidget.provider" android:resource="@xml/alarm_widget_wide_info"/>'
+              '</receiver>\n'
+              '</application>'
+          )
+          open(path, 'w').write(txt.replace('</application>', receivers))
+          print('Manifest patched OK')
+          PYEOF
+
+      - name: Patch Kotlin version
+        run: |
+          SETTINGS=${{ env.PROJECT_DIR }}/android/settings.gradle
+          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "1.9.23"/' $SETTINGS
+          cat >> ${{ env.PROJECT_DIR }}/android/build.gradle << 'GRADLE'
+
+          subprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force "org.jetbrains.kotlin:kotlin-stdlib:1.9.23"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-common:1.9.23"
+                  }
+              }
+          }
+          GRADLE
 
       - name: Inject Firebase options
         env:
@@ -106,38 +141,18 @@ jobs:
           echo "}" >> $GRADLE
           echo "android.buildTypes.release.signingConfig = android.signingConfigs.getByName('release_config')" >> $GRADLE
 
-      - name: Patch Kotlin version
-        run: |
-          SETTINGS=${{ env.PROJECT_DIR }}/android/settings.gradle
-          # Parchear settings.gradle (Flutter 3.19+)
-          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "1.9.23"/' $SETTINGS
-          # Forzar resolución de kotlin-stdlib a 1.9.x en todos los subproyectos
-          cat >> ${{ env.PROJECT_DIR }}/android/build.gradle << 'GRADLE'
-
-          subprojects {
-              configurations.all {
-                  resolutionStrategy {
-                      force "org.jetbrains.kotlin:kotlin-stdlib:1.9.23"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-common:1.9.23"
-                  }
-              }
-          }
-          GRADLE
-          echo "settings.gradle:"
-          cat $SETTINGS
-
       - name: Install widget resources
         run: |
-          # Recursos de layout y xml del widget
           mkdir -p ${{ env.PROJECT_DIR }}/android/app/src/main/res/layout
           mkdir -p ${{ env.PROJECT_DIR }}/android/app/src/main/res/xml
           cp ${{ env.PROJECT_DIR }}/android_res/layout/alarm_widget.xml \
              ${{ env.PROJECT_DIR }}/android/app/src/main/res/layout/alarm_widget.xml
+          cp ${{ env.PROJECT_DIR }}/android_res/layout/alarm_widget_wide.xml \
+             ${{ env.PROJECT_DIR }}/android/app/src/main/res/layout/alarm_widget_wide.xml
           cp ${{ env.PROJECT_DIR }}/android_res/xml/alarm_widget_info.xml \
              ${{ env.PROJECT_DIR }}/android/app/src/main/res/xml/alarm_widget_info.xml
-          # Receiver Kotlin
+          cp ${{ env.PROJECT_DIR }}/android_res/xml/alarm_widget_wide_info.xml \
+             ${{ env.PROJECT_DIR }}/android/app/src/main/res/xml/alarm_widget_wide_info.xml
           KOTLIN_DIR=${{ env.PROJECT_DIR }}/android/app/src/main/kotlin/com/homeassistant/ha_alarm
           mkdir -p $KOTLIN_DIR
           cp ${{ env.PROJECT_DIR }}/android_res/AlarmWidget.kt $KOTLIN_DIR/AlarmWidget.kt
