@@ -142,38 +142,38 @@ class UpdateService {
 
 // ─── Servicio de Widget Android ───────────────────────────────
 class WidgetService {
-  static const _appGroupId  = 'com.homeassistant.ha_alarm';
-  static const _widgetName  = 'AlarmWidget';
+  static const _pkg = 'com.homeassistant.ha_alarm';
 
-  // Actualiza los datos que el widget lee
+  static const _labels = {
+    AlarmState.disarmed:   'Desarmada',
+    AlarmState.armedAway:  'Armada',
+    AlarmState.armedHome:  'Armada (Casa)',
+    AlarmState.armedNight: 'Armada (Noche)',
+    AlarmState.arming:     'Armando...',
+    AlarmState.pending:    'Entrada...',
+    AlarmState.triggered:  '¡ALARMA!',
+    AlarmState.unknown:    'Sin conexión',
+  };
+
   static Future<void> update(AlarmState state) async {
     try {
-      final labels = {
-        AlarmState.disarmed:   'Desarmada',
-        AlarmState.armedAway:  'Armada',
-        AlarmState.armedHome:  'Armada (Casa)',
-        AlarmState.armedNight: 'Armada (Noche)',
-        AlarmState.arming:     'Armando...',
-        AlarmState.pending:    'Entrada...',
-        AlarmState.triggered:  '¡ALARMA!',
-        AlarmState.unknown:    'Sin conexión',
-      };
-      final now = DateTime.now();
-      final hora = '${now.hour.toString().padLeft(2,'0')}:${now.minute.toString().padLeft(2,'0')}';
+      final now  = DateTime.now();
+      final hora = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
-      await HomeWidget.saveWidgetData<String>('state_label', labels[state] ?? '—');
+      await HomeWidget.saveWidgetData<String>('state_label', _labels[state] ?? '—');
       await HomeWidget.saveWidgetData<String>('state_key',   state.name);
       await HomeWidget.saveWidgetData<String>('updated_at',  hora);
+
       await HomeWidget.updateWidget(
-        androidName: _widgetName,
-        qualifiedAndroidName: '$_appGroupId.$_widgetName',
+        androidName: 'AlarmWidget',
+        qualifiedAndroidName: '$_pkg.AlarmWidget',
+      );
+      await HomeWidget.updateWidget(
+        androidName: 'AlarmWidgetWide',
+        qualifiedAndroidName: '$_pkg.AlarmWidgetWide',
       );
     } catch (_) {}
   }
 
-  static Future<void> init() async {
-    try {
-      await HomeWidget.setAppGroupId(_appGroupId);
-    } catch (_) {}
-  }
+  static Future<void> init() async {}
 }
