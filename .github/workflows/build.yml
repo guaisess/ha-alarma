@@ -156,6 +156,7 @@ jobs:
           KOTLIN_DIR=${{ env.PROJECT_DIR }}/android/app/src/main/kotlin/com/homeassistant/ha_alarm
           mkdir -p $KOTLIN_DIR
           cp ${{ env.PROJECT_DIR }}/android_res/AlarmWidget.kt $KOTLIN_DIR/AlarmWidget.kt
+          cp ${{ env.PROJECT_DIR }}/android_res/MainActivity.kt $KOTLIN_DIR/MainActivity.kt
 
       - name: Get dependencies
         working-directory: ${{ env.PROJECT_DIR }}
