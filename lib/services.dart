@@ -11,6 +11,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:vibration/vibration.dart';
 import 'models.dart';
 
+// Imports para archivo (File, Directory)
+// ya incluidos en dart:io
+
 // ─── Servicio Home Assistant ──────────────────────────────────
 class HaService {
   final Config config;
@@ -136,6 +139,100 @@ class UpdateService {
       if (total > 0) onProgress(recv / total);
     });
     await OpenFile.open(path);
+  }
+}
+
+// ─── Servicio de Backup/Restore ───────────────────────────────
+class BackupService {
+  static String _generateFilename() {
+    final now = DateTime.now();
+    final date = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final time = '${now.hour.toString().padLeft(2, '0')}-${now.minute.toString().padLeft(2, '0')}-${now.second.toString().padLeft(2, '0')}';
+    return 'alarma_backup_$date\_$time.json';
+  }
+
+  /// Exporta la configuración y opcionalmente el historial a JSON
+  static Future<String> export({bool includeHistory = false}) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final backup = {
+      'version': '1.0',
+      'timestamp': DateTime.now().toIso8601String(),
+      'config': {
+        'url':       prefs.getString('ha_url') ?? '',
+        'token':     prefs.getString('ha_token') ?? '',
+        'entity':    prefs.getString('ha_entity') ?? '',
+        'code':      prefs.getString('ha_code') ?? '',
+        'updateUrl': prefs.getString('ha_updateUrl') ?? '',
+        'timeout':   prefs.getInt('ha_timeout') ?? 5,
+        'theme':     prefs.getString('app_theme') ?? 'system',
+      },
+    };
+
+    if (includeHistory) {
+      final historyRaw = prefs.getStringList('alarm_history') ?? [];
+      backup['history'] = historyRaw.map((s) => jsonDecode(s)).toList();
+    }
+
+    return jsonEncode(backup);
+  }
+
+  /// Importa configuración desde JSON
+  static Future<bool> import(String jsonString) async {
+    try {
+      final data = jsonDecode(jsonString) as Map<String, dynamic>;
+      final config = data['config'] as Map<String, dynamic>? ?? {};
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // Restaurar configuración
+      if (config['url'] != null) await prefs.setString('ha_url', config['url']);
+      if (config['token'] != null) await prefs.setString('ha_token', config['token']);
+      if (config['entity'] != null) await prefs.setString('ha_entity', config['entity']);
+      if (config['code'] != null) await prefs.setString('ha_code', config['code']);
+      if (config['updateUrl'] != null) await prefs.setString('ha_updateUrl', config['updateUrl']);
+      if (config['timeout'] != null) await prefs.setInt('ha_timeout', config['timeout']);
+      if (config['theme'] != null) await prefs.setString('app_theme', config['theme']);
+
+      // Restaurar historial si existe
+      if (data['history'] is List) {
+        final history = (data['history'] as List)
+            .map((e) => jsonEncode(e))
+            .toList()
+            .cast<String>();
+        await prefs.setStringList('alarm_history', history);
+      }
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Guarda el backup en el almacenamiento del dispositivo
+  static Future<String?> saveBackupFile({bool includeHistory = false}) async {
+    try {
+      final backup = await export(includeHistory: includeHistory);
+      final dir = await getApplicationDocumentsDirectory();
+      final filename = _generateFilename();
+      final file = File('${dir.path}/$filename');
+      await file.writeAsString(backup);
+      return file.path;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Carga un backup desde un archivo
+  static Future<bool> loadBackupFile(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (!await file.exists()) return false;
+      final content = await file.readAsString();
+      return await import(content);
+    } catch (e) {
+      return false;
+    }
   }
 }
 

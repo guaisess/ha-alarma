@@ -78,6 +78,67 @@ class _ConfigScreenState extends State<ConfigScreen> {
     }
   }
 
+  Future<void> _exportBackup() async {
+    try {
+      final path = await BackupService.saveBackupFile(includeHistory: true);
+      if (path != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Backup guardado en:\n$path'),
+            backgroundColor: kGreen,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error al exportar: $e'),
+            backgroundColor: kRed,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _importBackup() async {
+    // En una app real, aquí habría un file picker
+    // Por ahora, mostramos un diálogo con instrucciones
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? kSurface : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.upload_rounded, color: kBlue, size: 44),
+            const SizedBox(height: 14),
+            const Text('Importar backup',
+                style: TextStyle(color: kText, fontWeight: FontWeight.bold, fontSize: 17)),
+            const SizedBox(height: 8),
+            const Text('Copie el archivo JSON en la carpeta Documents de su teléfono',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: kSubtext, fontSize: 13)),
+            const SizedBox(height: 20),
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: kSubtext,
+                  side: const BorderSide(color: kSubtext),
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12))),
+              child: const Text('Entendido'),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _urlCtrl.dispose(); _tokenCtrl.dispose();
@@ -294,6 +355,48 @@ class _ConfigScreenState extends State<ConfigScreen> {
                       fontWeight: FontWeight.w600)),
             ),
           ],
+
+          const SizedBox(height: 20),
+
+          // ── Copia de seguridad ──
+          SectionCard(
+            title: '💾 Copia de seguridad',
+            surfaceColor: surfaceColor,
+            textColor: textColor,
+            children: [
+              Row(children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _exportBackup,
+                    icon: const Icon(Icons.download_rounded),
+                    label: const Text('Exportar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kBlue.withOpacity(0.2),
+                      foregroundColor: kBlue,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _importBackup,
+                    icon: const Icon(Icons.upload_rounded),
+                    label: const Text('Importar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kGreen.withOpacity(0.2),
+                      foregroundColor: kGreen,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ]),
+            ],
+          ),
 
           const SizedBox(height: 16),
 
