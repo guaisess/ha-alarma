@@ -45,6 +45,7 @@ class AlarmWidget : AppWidgetProvider() {
         appWidgetIds: IntArray
     ) {
         val prefs      = getFlutterPrefs(context)
+        // SharedPreferences de Flutter añade automáticamente "flutter." al guardar
         val stateLabel = prefs.getString("flutter.widget_state_label", "Alarma Casa") ?: "Alarma Casa"
         val updatedAt  = prefs.getString("flutter.widget_updated_at",  "") ?: ""
         val stateKey   = prefs.getString("flutter.widget_state_key",   "unknown") ?: "unknown"

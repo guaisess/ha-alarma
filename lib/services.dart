@@ -162,13 +162,18 @@ class WidgetService {
       final hora = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('flutter.widget_state_label', _labels[state] ?? '—');
-      await prefs.setString('flutter.widget_state_key',   state.name);
-      await prefs.setString('flutter.widget_updated_at',  hora);
+      await prefs.setString('widget_state_label', _labels[state] ?? '—');
+      await prefs.setString('widget_state_key',   state.name);
+      await prefs.setString('widget_updated_at',  hora);
 
-      await _channel.invokeMethod('updateWidget');
+      // Invocar actualización del widget nativo
+      try {
+        await _channel.invokeMethod('updateWidget');
+      } catch (channelError) {
+        // El canal puede fallar, pero los datos se guardaron en prefs
+      }
     } catch (e) {
-      // Error comunicando con widget nativo - pero los datos se guardaron en prefs
+      // Error guardando en prefs
     }
   }
 
@@ -176,15 +181,9 @@ class WidgetService {
     try {
       final prefs = await SharedPreferences.getInstance();
       // Establecer valores por defecto si no existen
-      if (!prefs.containsKey('flutter.widget_state_label')) {
-        await prefs.setString('flutter.widget_state_label', 'Alarma Casa');
-      }
-      if (!prefs.containsKey('flutter.widget_state_key')) {
-        await prefs.setString('flutter.widget_state_key', 'unknown');
-      }
-      if (!prefs.containsKey('flutter.widget_updated_at')) {
-        await prefs.setString('flutter.widget_updated_at', '');
-      }
+      prefs.setString('widget_state_label', _labels[AlarmState.unknown] ?? 'Sin conexión');
+      prefs.setString('widget_state_key',   'unknown');
+      prefs.setString('widget_updated_at',  '');
     } catch (e) {
       // Falló inicialización de widget - continuar sin error
     }
