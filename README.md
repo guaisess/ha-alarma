@@ -243,6 +243,11 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.2.9
+- 💾 Copia de seguridad: nueva función para exportar e importar configuración completa
+- ⚙️ Nuevo servicio BackupService con soporte para exportar/importar JSON
+- 🎯 Permite recuperar la configuración si se desinstala la app
+
 ### v1.2.8
 - 🐛 Widget: corregido fallo de carga de plugins (2×2 y 2×1) — inicialización de valores por defecto y sincronización de SharedPreferences
 
