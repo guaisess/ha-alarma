@@ -161,16 +161,32 @@ class WidgetService {
       final now  = DateTime.now();
       final hora = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
-      // Guardar datos donde los lee el AppWidgetProvider nativo
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('widget_state_label', _labels[state] ?? '—');
-      await prefs.setString('widget_state_key',   state.name);
-      await prefs.setString('widget_updated_at',  hora);
+      await prefs.setString('flutter.widget_state_label', _labels[state] ?? '—');
+      await prefs.setString('flutter.widget_state_key',   state.name);
+      await prefs.setString('flutter.widget_updated_at',  hora);
 
-      // Disparar update del widget via MethodChannel
       await _channel.invokeMethod('updateWidget');
-    } catch (_) {}
+    } catch (e) {
+      // Error comunicando con widget nativo - pero los datos se guardaron en prefs
+    }
   }
 
-  static Future<void> init() async {}
+  static Future<void> init() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Establecer valores por defecto si no existen
+      if (!prefs.containsKey('flutter.widget_state_label')) {
+        await prefs.setString('flutter.widget_state_label', 'Alarma Casa');
+      }
+      if (!prefs.containsKey('flutter.widget_state_key')) {
+        await prefs.setString('flutter.widget_state_key', 'unknown');
+      }
+      if (!prefs.containsKey('flutter.widget_updated_at')) {
+        await prefs.setString('flutter.widget_updated_at', '');
+      }
+    } catch (e) {
+      // Falló inicialización de widget - continuar sin error
+    }
+  }
 }
