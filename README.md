@@ -243,6 +243,9 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.2.8
+- 🐛 Widget: corregido fallo de carga de plugins (2×2 y 2×1) — inicialización de valores por defecto y sincronización de SharedPreferences
+
 ### v1.2.7
 - 🐛 Widget: corregido "Error al cargar" — eliminada dependencia de HomeWidgetProvider, actualización directa vía broadcast
 
