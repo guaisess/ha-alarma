@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
 import '../constants.dart';
 import '../models.dart';
 import '../services.dart';
@@ -103,40 +104,114 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   Future<void> _importBackup() async {
-    // En una app real, aquí habría un file picker
-    // Por ahora, mostramos un diálogo con instrucciones
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? kSurface : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.upload_rounded, color: kBlue, size: 44),
-            const SizedBox(height: 14),
-            const Text('Importar backup',
-                style: TextStyle(color: kText, fontWeight: FontWeight.bold, fontSize: 17)),
-            const SizedBox(height: 8),
-            const Text('Copie el archivo JSON en:\nDescargas/Alarma Casa Backups',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: kSubtext, fontSize: 13)),
-            const SizedBox(height: 20),
-            OutlinedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: OutlinedButton.styleFrom(
-                  foregroundColor: kSubtext,
-                  side: const BorderSide(color: kSubtext),
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12))),
-              child: const Text('Entendido'),
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        dialogTitle: 'Seleccionar backup',
+        initialDirectory: '/storage/emulated/0/Download/Alarma Casa Backups',
+      );
+
+      if (result == null || result.files.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Importación cancelada'),
+              backgroundColor: kSubtext,
             ),
-          ]),
+          );
+        }
+        return;
+      }
+
+      final filePath = result.files.single.path;
+      if (filePath == null) return;
+
+      // Mostrar diálogo de confirmación
+      if (!mounted) return;
+      final confirm = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => Dialog(
+          backgroundColor: Theme.of(context).brightness == Brightness.dark ? kSurface : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.warning_rounded, color: kOrange, size: 44),
+              const SizedBox(height: 14),
+              const Text('¿Restaurar configuración?',
+                  style: TextStyle(color: kText, fontWeight: FontWeight.bold, fontSize: 17)),
+              const SizedBox(height: 8),
+              const Text('Se sobrescribirá la configuración actual',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: kSubtext, fontSize: 13)),
+              const SizedBox(height: 20),
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    style: OutlinedButton.styleFrom(
+                        foregroundColor: kSubtext,
+                        side: const BorderSide(color: kSubtext),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    child: const Text('Cancelar'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kBlue,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: const Text('Restaurar', style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ]),
+            ]),
+          ),
         ),
-      ),
-    );
+      );
+
+      if (confirm != true) return;
+
+      // Restaurar backup
+      final success = await BackupService.loadBackupFile(filePath);
+
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Configuración restaurada correctamente'),
+              backgroundColor: kGreen,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          // Recargar configuración
+          await Future.delayed(const Duration(seconds: 1));
+          Navigator.pop(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Error al restaurar el backup'),
+              backgroundColor: kRed,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: kRed,
+          ),
+        );
+      }
+    }
   }
 
   @override

@@ -243,6 +243,11 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.3.1
+- 📁 Copia de seguridad: ahora permite seleccionar archivos para restaurar
+- 🔧 File picker para elegir archivo JSON desde Descargas/Alarma Casa Backups
+- ✅ Interfaz mejorada con confirmación de restauración exitosa
+
 ### v1.2.9
 - 💾 Copia de seguridad: nueva función para exportar e importar configuración completa
 - ⚙️ Nuevo servicio BackupService con soporte para exportar/importar JSON
