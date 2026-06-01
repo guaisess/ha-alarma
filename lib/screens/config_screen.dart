@@ -84,7 +84,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
       if (path != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Backup guardado en:\n$path'),
+            content: const Text('✅ Backup guardado en Descargas/Alarma Casa Backups'),
             backgroundColor: kGreen,
             duration: const Duration(seconds: 4),
           ),
@@ -119,7 +119,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
             const Text('Importar backup',
                 style: TextStyle(color: kText, fontWeight: FontWeight.bold, fontSize: 17)),
             const SizedBox(height: 8),
-            const Text('Copie el archivo JSON en la carpeta Descargas de su teléfono',
+            const Text('Copie el archivo JSON en:\nDescargas/Alarma Casa Backups',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: kSubtext, fontSize: 13)),
             const SizedBox(height: 20),

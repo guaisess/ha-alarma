@@ -209,20 +209,21 @@ class BackupService {
     }
   }
 
-  /// Guarda el backup en la carpeta Descargas del dispositivo
+  /// Guarda el backup en la carpeta Descargas pública del dispositivo
   static Future<String?> saveBackupFile({bool includeHistory = false}) async {
     try {
       final backup = await export(includeHistory: includeHistory);
-      // Intentar guardar en Descargas primero
-      Directory? dir = await getDownloadsDirectory();
 
-      // Si no está disponible, usar Documentos como fallback
-      if (dir == null) {
-        dir = await getApplicationDocumentsDirectory();
+      // Crear carpeta "Alarma Casa Backups" en Descargas pública
+      final downloadsPath = '/storage/emulated/0/Download';
+      final backupDir = Directory('$downloadsPath/Alarma Casa Backups');
+
+      if (!await backupDir.exists()) {
+        await backupDir.create(recursive: true);
       }
 
       final filename = _generateFilename();
-      final file = File('${dir.path}/$filename');
+      final file = File('${backupDir.path}/$filename');
       await file.writeAsString(backup);
       return file.path;
     } catch (e) {
