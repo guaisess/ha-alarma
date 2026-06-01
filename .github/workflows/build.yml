@@ -84,9 +84,10 @@ jobs:
       - name: Patch Kotlin version
         run: |
           SETTINGS=${{ env.PROJECT_DIR }}/android/settings.gradle
-          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "2.0.0"/' $SETTINGS
+          BUILD_GRADLE=${{ env.PROJECT_DIR }}/android/build.gradle
+          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "2.0.0"/' "$SETTINGS"
 
-          cat >> $BUILD_GRADLE << 'GRADLE'
+          cat >> "$BUILD_GRADLE" << 'GRADLE'
 
           subprojects {
               configurations.all {
