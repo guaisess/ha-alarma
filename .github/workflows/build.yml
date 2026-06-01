@@ -30,11 +30,6 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      - name: Remove Android SDK 35
-        run: |
-          rm -rf /usr/local/lib/android/sdk/platforms/android-35 || true
-          rm -rf ~/.android/cache || true
-
       - name: Find project root
         run: |
           PROJ=$(find . -name "pubspec.yaml" -not -path "*/.*" | head -1 | xargs dirname)
@@ -50,20 +45,13 @@ jobs:
       - name: Generate Android structure with custom API level
         run: |
           flutter create --project-name ha_alarm --org com.homeassistant /tmp/flutter_base
-          # Replace ALL instances of 35 with 33 in Android files
-          find /tmp/flutter_base/android -type f \( -name "*.gradle" -o -name "*.properties" -o -name "*.xml" \) -exec sed -i 's/35/33/g' {} +
-          # Explicitly set both compileSdkVersion AND targetSdkVersion to 33
-          sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 33/' /tmp/flutter_base/android/app/build.gradle || true
-          sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 33/' /tmp/flutter_base/android/app/build.gradle || true
+          # Replace 35 with 34 in Android files (use 34 to avoid issues with 35)
+          find /tmp/flutter_base/android -type f \( -name "*.gradle" -o -name "*.properties" -o -name "*.xml" \) -exec sed -i 's/35/34/g' {} +
+          # Explicitly set both compileSdkVersion AND targetSdkVersion to 34
+          sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 34/' /tmp/flutter_base/android/app/build.gradle || true
+          sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 34/' /tmp/flutter_base/android/app/build.gradle || true
           cp -r /tmp/flutter_base/android ${{ env.PROJECT_DIR }}/
           cp -r /tmp/flutter_base/test    ${{ env.PROJECT_DIR }}/
-
-      - name: Verify SDK versions
-        run: |
-          echo "=== Checking app/build.gradle ==="
-          grep -E 'compileSdkVersion|targetSdkVersion' ${{ env.PROJECT_DIR }}/android/app/build.gradle || echo "Not found"
-          echo "=== Checking for any remaining 35 ==="
-          grep -r "35" ${{ env.PROJECT_DIR }}/android/app/build.gradle || echo "No 35 found"
 
       - name: Clear Gradle cache
         run: |
@@ -100,17 +88,17 @@ jobs:
         run: |
           SETTINGS=${{ env.PROJECT_DIR }}/android/settings.gradle
           BUILD_GRADLE=${{ env.PROJECT_DIR }}/android/build.gradle
-          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "1.8.22"/' "$SETTINGS"
+          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "2.0.0"/' "$SETTINGS"
 
           cat >> "$BUILD_GRADLE" << 'GRADLE'
 
           subprojects {
               configurations.all {
                   resolutionStrategy {
-                      force "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22"
+                      force "org.jetbrains.kotlin:kotlin-stdlib:2.0.0"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.0.0"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-common:2.0.0"
                   }
               }
           }
