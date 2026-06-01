@@ -10,10 +10,11 @@ import android.widget.RemoteViews
 import android.app.PendingIntent
 
 // ─── SharedPreferences de Flutter (shared_preferences plugin) ─
-// El plugin guarda en: context.packageName + "_preferences"
+// Flutter shared_preferences ^2.x guarda en "FlutterSharedPreferences"
+// con prefijo "flutter." en cada clave
 private fun getFlutterPrefs(context: Context): SharedPreferences =
     context.getSharedPreferences(
-        "${context.packageName}_preferences",
+        "FlutterSharedPreferences",
         Context.MODE_PRIVATE
     )
 
@@ -44,22 +45,27 @@ class AlarmWidget : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        val prefs      = getFlutterPrefs(context)
-        // SharedPreferences de Flutter añade automáticamente "flutter." al guardar
-        val stateLabel = prefs.getString("flutter.widget_state_label", "Alarma Casa") ?: "Alarma Casa"
-        val updatedAt  = prefs.getString("flutter.widget_updated_at",  "") ?: ""
-        val stateKey   = prefs.getString("flutter.widget_state_key",   "unknown") ?: "unknown"
-        val color      = colorForState(stateKey)
-        val pending    = launchIntent(context)
+        try {
+            val prefs      = getFlutterPrefs(context)
+            // SharedPreferences de Flutter añade automáticamente "flutter." al guardar
+            val stateLabel = prefs.getString("flutter.widget_state_label", "Alarma Casa") ?: "Alarma Casa"
+            val updatedAt  = prefs.getString("flutter.widget_updated_at",  "") ?: ""
+            val stateKey   = prefs.getString("flutter.widget_state_key",   "unknown") ?: "unknown"
+            val color      = colorForState(stateKey)
+            val pending    = launchIntent(context)
 
-        for (id in appWidgetIds) {
-            val views = RemoteViews(context.packageName, R.layout.alarm_widget)
-            views.setTextViewText(R.id.widget_state, stateLabel)
-            views.setTextViewText(R.id.widget_time,
-                if (updatedAt.isNotEmpty()) "Act: $updatedAt" else "")
-            views.setTextColor(R.id.widget_state, color)
-            if (pending != null) views.setOnClickPendingIntent(R.id.widget_state, pending)
-            appWidgetManager.updateAppWidget(id, views)
+            for (id in appWidgetIds) {
+                val views = RemoteViews(context.packageName, R.layout.alarm_widget)
+                views.setTextViewText(R.id.widget_state, stateLabel)
+                views.setTextViewText(R.id.widget_time,
+                    if (updatedAt.isNotEmpty()) "Act: $updatedAt" else "")
+                views.setTextColor(R.id.widget_state, color)
+                if (pending != null) views.setOnClickPendingIntent(R.id.widget_state, pending)
+                appWidgetManager.updateAppWidget(id, views)
+            }
+        } catch (e: Exception) {
+            // Si hay error, al menos no crashear - logs irían a logcat
+            android.util.Log.e("AlarmWidget", "Error updating widget", e)
         }
     }
 
@@ -83,24 +89,29 @@ class AlarmWidgetWide : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        val prefs      = getFlutterPrefs(context)
-        val stateLabel = prefs.getString("flutter.widget_state_label", "Alarma Casa") ?: "Alarma Casa"
-        val updatedAt  = prefs.getString("flutter.widget_updated_at",  "") ?: ""
-        val stateKey   = prefs.getString("flutter.widget_state_key",   "unknown") ?: "unknown"
-        val color      = colorForState(stateKey)
-        val pending    = launchIntent(context)
+        try {
+            val prefs      = getFlutterPrefs(context)
+            val stateLabel = prefs.getString("flutter.widget_state_label", "Alarma Casa") ?: "Alarma Casa"
+            val updatedAt  = prefs.getString("flutter.widget_updated_at",  "") ?: ""
+            val stateKey   = prefs.getString("flutter.widget_state_key",   "unknown") ?: "unknown"
+            val color      = colorForState(stateKey)
+            val pending    = launchIntent(context)
 
-        for (id in appWidgetIds) {
-            val views = RemoteViews(context.packageName, R.layout.alarm_widget_wide)
-            views.setTextViewText(R.id.widget_wide_state, stateLabel)
-            views.setTextViewText(R.id.widget_wide_time,
-                if (updatedAt.isNotEmpty()) "Act: $updatedAt" else "")
-            views.setTextColor(R.id.widget_wide_state, color)
-            if (pending != null) {
-                views.setOnClickPendingIntent(R.id.widget_wide_state, pending)
-                views.setOnClickPendingIntent(R.id.widget_wide_icon,  pending)
+            for (id in appWidgetIds) {
+                val views = RemoteViews(context.packageName, R.layout.alarm_widget_wide)
+                views.setTextViewText(R.id.widget_wide_state, stateLabel)
+                views.setTextViewText(R.id.widget_wide_time,
+                    if (updatedAt.isNotEmpty()) "Act: $updatedAt" else "")
+                views.setTextColor(R.id.widget_wide_state, color)
+                if (pending != null) {
+                    views.setOnClickPendingIntent(R.id.widget_wide_state, pending)
+                    views.setOnClickPendingIntent(R.id.widget_wide_icon,  pending)
+                }
+                appWidgetManager.updateAppWidget(id, views)
             }
-            appWidgetManager.updateAppWidget(id, views)
+        } catch (e: Exception) {
+            // Si hay error, al menos no crashear - logs irían a logcat
+            android.util.Log.e("AlarmWidgetWide", "Error updating widget", e)
         }
     }
 

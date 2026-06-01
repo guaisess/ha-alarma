@@ -243,6 +243,13 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.3.5
+- 🐛 Widget: corregido fichero SharedPreferences incorrecto (causa raíz real)
+  - Flutter guarda en `FlutterSharedPreferences`, no en `{packageName}_preferences`
+  - El widget ahora lee el estado correcto de la alarma
+- 🐛 Widget 2×1: corregido crash por `layout_marginHorizontal` no soportado en RemoteViews
+  - Reemplazado por `layout_marginLeft` + `layout_marginRight`
+
 ### v1.3.4
 - 🐛 Widget: añadidos `minWidth`/`minHeight` a los XML del provider (causa raíz del "Error al cargar el widget")
 - 🔧 Permisos de red (INTERNET) restaurados en AndroidManifest

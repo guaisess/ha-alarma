@@ -1,7 +1,7 @@
 name: ha_alarm
 description: Home Assistant Alarm Control
 publish_to: none
-version: 1.3.4+34
+version: 1.3.5+35
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
