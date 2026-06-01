@@ -209,11 +209,18 @@ class BackupService {
     }
   }
 
-  /// Guarda el backup en el almacenamiento del dispositivo
+  /// Guarda el backup en la carpeta Descargas del dispositivo
   static Future<String?> saveBackupFile({bool includeHistory = false}) async {
     try {
       final backup = await export(includeHistory: includeHistory);
-      final dir = await getApplicationDocumentsDirectory();
+      // Intentar guardar en Descargas primero
+      Directory? dir = await getDownloadsDirectory();
+
+      // Si no está disponible, usar Documentos como fallback
+      if (dir == null) {
+        dir = await getApplicationDocumentsDirectory();
+      }
+
       final filename = _generateFilename();
       final file = File('${dir.path}/$filename');
       await file.writeAsString(backup);

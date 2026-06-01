@@ -119,7 +119,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
             const Text('Importar backup',
                 style: TextStyle(color: kText, fontWeight: FontWeight.bold, fontSize: 17)),
             const SizedBox(height: 8),
-            const Text('Copie el archivo JSON en la carpeta Documents de su teléfono',
+            const Text('Copie el archivo JSON en la carpeta Descargas de su teléfono',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: kSubtext, fontSize: 13)),
             const SizedBox(height: 20),
