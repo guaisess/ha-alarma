@@ -47,8 +47,9 @@ jobs:
           flutter create --project-name ha_alarm --org com.homeassistant /tmp/flutter_base
           # Replace ALL instances of 35 with 33 in Android files
           find /tmp/flutter_base/android -type f \( -name "*.gradle" -o -name "*.properties" -o -name "*.xml" \) -exec sed -i 's/35/33/g' {} +
-          # Also set compileSdkVersion explicitly
+          # Explicitly set both compileSdkVersion AND targetSdkVersion to 33
           sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 33/' /tmp/flutter_base/android/app/build.gradle || true
+          sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 33/' /tmp/flutter_base/android/app/build.gradle || true
           cp -r /tmp/flutter_base/android ${{ env.PROJECT_DIR }}/
           cp -r /tmp/flutter_base/test    ${{ env.PROJECT_DIR }}/
 
@@ -87,17 +88,17 @@ jobs:
         run: |
           SETTINGS=${{ env.PROJECT_DIR }}/android/settings.gradle
           BUILD_GRADLE=${{ env.PROJECT_DIR }}/android/build.gradle
-          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "2.0.0"/' "$SETTINGS"
+          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "1.9.23"/' "$SETTINGS"
 
           cat >> "$BUILD_GRADLE" << 'GRADLE'
 
           subprojects {
               configurations.all {
                   resolutionStrategy {
-                      force "org.jetbrains.kotlin:kotlin-stdlib:2.0.0"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.0.0"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-common:2.0.0"
+                      force "org.jetbrains.kotlin:kotlin-stdlib:1.9.23"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-common:1.9.23"
                   }
               }
           }
