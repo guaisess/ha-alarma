@@ -27,7 +27,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.22.2'
           channel: 'stable'
 
       - name: Find project root
@@ -42,14 +42,9 @@ jobs:
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
           echo "Version: $VERSION"
 
-      - name: Generate Android structure with custom API level
+      - name: Generate Android structure
         run: |
           flutter create --project-name ha_alarm --org com.homeassistant /tmp/flutter_base
-          # Replace 35 with 34 in Android files (use 34 to avoid issues with 35)
-          find /tmp/flutter_base/android -type f \( -name "*.gradle" -o -name "*.properties" -o -name "*.xml" \) -exec sed -i 's/35/34/g' {} +
-          # Explicitly set both compileSdkVersion AND targetSdkVersion to 34
-          sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 34/' /tmp/flutter_base/android/app/build.gradle || true
-          sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 34/' /tmp/flutter_base/android/app/build.gradle || true
           cp -r /tmp/flutter_base/android ${{ env.PROJECT_DIR }}/
           cp -r /tmp/flutter_base/test    ${{ env.PROJECT_DIR }}/
 
@@ -84,25 +79,10 @@ jobs:
           print('Manifest patched OK')
           PYEOF
 
-      - name: Patch Kotlin version
+      - name: Clear Gradle cache
         run: |
-          SETTINGS=${{ env.PROJECT_DIR }}/android/settings.gradle
-          BUILD_GRADLE=${{ env.PROJECT_DIR }}/android/build.gradle
-          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "2.0.0"/' "$SETTINGS"
-
-          cat >> "$BUILD_GRADLE" << 'GRADLE'
-
-          subprojects {
-              configurations.all {
-                  resolutionStrategy {
-                      force "org.jetbrains.kotlin:kotlin-stdlib:2.0.0"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.0.0"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-common:2.0.0"
-                  }
-              }
-          }
-          GRADLE
+          rm -rf ~/.gradle/caches/ || true
+          rm -rf ~/.gradle/wrapper/ || true
 
       - name: Inject Firebase options
         env:
