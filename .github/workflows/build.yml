@@ -82,7 +82,7 @@ jobs:
       - name: Patch Kotlin version and compileSdk
         run: |
           SETTINGS=${{ env.PROJECT_DIR }}/android/settings.gradle
-          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "1.8.22"/' $SETTINGS
+          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "2.0.0"/' $SETTINGS
 
           BUILD_GRADLE=${{ env.PROJECT_DIR }}/android/build.gradle
           sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 34/' $BUILD_GRADLE || true
@@ -92,10 +92,10 @@ jobs:
           subprojects {
               configurations.all {
                   resolutionStrategy {
-                      force "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"
-                      force "org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22"
+                      force "org.jetbrains.kotlin:kotlin-stdlib:2.0.0"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.0.0"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-common:2.0.0"
                   }
               }
           }
