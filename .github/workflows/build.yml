@@ -55,28 +55,46 @@ jobs:
 
       - name: Patch AndroidManifest
         run: |
-          MANIFEST=${{ env.PROJECT_DIR }}/android/app/src/main/AndroidManifest.xml
-          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
-          sed -i 's/android:label="ha_alarm"/android:label="Alarma Casa"/' $MANIFEST
-          sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"\/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"\/>' $MANIFEST
           python3 << 'PYEOF'
           import os
           proj = os.environ['PROJECT_DIR']
           path = f'{proj}/android/app/src/main/AndroidManifest.xml'
-          txt = open(path).read()
-          receivers = (
-              '    <receiver android:name=".AlarmWidget" android:exported="true">'
-              '<intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>'
-              '<meta-data android:name="android.appwidget.provider" android:resource="@xml/alarm_widget_info"/>'
-              '</receiver>\n'
-              '    <receiver android:name=".AlarmWidgetWide" android:exported="true">'
-              '<intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>'
-              '<meta-data android:name="android.appwidget.provider" android:resource="@xml/alarm_widget_wide_info"/>'
-              '</receiver>\n'
-              '</application>'
+
+          with open(path, 'r') as f:
+              txt = f.read()
+
+          # 1. Add usesCleartextTraffic
+          txt = txt.replace(
+              '<application',
+              '<application android:usesCleartextTraffic="true"'
           )
-          open(path, 'w').write(txt.replace('</application>', receivers))
-          print('Manifest patched OK')
+
+          # 2. Change app label
+          txt = txt.replace(
+              'android:label="ha_alarm"',
+              'android:label="Alarma Casa"'
+          )
+
+          # 3. Add widget receivers before </application>
+          receivers = '''    <receiver android:name=".AlarmWidget" android:exported="true">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/alarm_widget_info"/>
+    </receiver>
+    <receiver android:name=".AlarmWidgetWide" android:exported="true">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/alarm_widget_wide_info"/>
+    </receiver>
+'''
+          txt = txt.replace('</application>', receivers + '  </application>')
+
+          with open(path, 'w') as f:
+              f.write(txt)
+
+          print('✓ Manifest patched successfully')
           PYEOF
 
       - name: Clear Gradle cache
