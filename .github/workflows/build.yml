@@ -24,6 +24,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Clear Gradle cache
+        run: |
+          rm -rf ~/.gradle/caches/
+          rm -rf ~/.gradle/wrapper/
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -74,11 +79,15 @@ jobs:
           print('Manifest patched OK')
           PYEOF
 
-      - name: Patch Kotlin version
+      - name: Patch Kotlin version and compileSdk
         run: |
           SETTINGS=${{ env.PROJECT_DIR }}/android/settings.gradle
           sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "1.8.22"/' $SETTINGS
-          cat >> ${{ env.PROJECT_DIR }}/android/build.gradle << 'GRADLE'
+
+          BUILD_GRADLE=${{ env.PROJECT_DIR }}/android/build.gradle
+          sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 34/' $BUILD_GRADLE || true
+
+          cat >> $BUILD_GRADLE << 'GRADLE'
 
           subprojects {
               configurations.all {
