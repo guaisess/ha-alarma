@@ -99,13 +99,14 @@ class AlarmWidgetWide : AppWidgetProvider() {
 
             for (id in appWidgetIds) {
                 val views = RemoteViews(context.packageName, R.layout.alarm_widget_wide)
+                views.setTextViewText(R.id.widget_wide_title, "Alarma Casa")
                 views.setTextViewText(R.id.widget_wide_state, stateLabel)
                 views.setTextViewText(R.id.widget_wide_time,
                     if (updatedAt.isNotEmpty()) "Act: $updatedAt" else "")
                 views.setTextColor(R.id.widget_wide_state, color)
                 if (pending != null) {
+                    views.setOnClickPendingIntent(R.id.widget_wide_title, pending)
                     views.setOnClickPendingIntent(R.id.widget_wide_state, pending)
-                    views.setOnClickPendingIntent(R.id.widget_wide_icon,  pending)
                 }
                 appWidgetManager.updateAppWidget(id, views)
             }

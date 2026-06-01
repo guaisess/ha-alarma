@@ -243,6 +243,12 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.3.7
+- 🎨 Widget 2×1: rediseño — sin icono, tres líneas centradas
+  - Línea 1: "Alarma Casa" en blanco
+  - Línea 2: estado en su color (verde, rojo, naranja...)
+  - Línea 3: última actualización en gris pequeño
+
 ### v1.3.6
 - 🐛 Widget 2×1: eliminado `<View>` del separador (no soportado en RemoteViews)
   - RemoteViews solo admite: LinearLayout, TextView, ImageView, Button...

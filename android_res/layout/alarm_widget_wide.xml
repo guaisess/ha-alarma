@@ -2,49 +2,45 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:padding="12dp"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="10dp"
     android:background="#CC1e293b">
 
-    <!-- Icono a la izquierda -->
-    <ImageView
-        android:id="@+id/widget_wide_icon"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:src="@mipmap/ic_launcher"
-        android:contentDescription="Estado" />
-
-    <!-- Info a la derecha (con padding izquierdo en lugar del separador View) -->
-    <LinearLayout
-        android:layout_width="0dp"
+    <TextView
+        android:id="@+id/widget_wide_title"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:layout_marginLeft="12dp"
-        android:orientation="vertical"
-        android:gravity="center_vertical">
+        android:text="Alarma Casa"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="#F1F5F9"
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end"/>
 
-        <TextView
-            android:id="@+id/widget_wide_state"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="—"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:textColor="#F1F5F9"
-            android:maxLines="1"
-            android:ellipsize="end"/>
+    <TextView
+        android:id="@+id/widget_wide_state"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="—"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="#F1F5F9"
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end"/>
 
-        <TextView
-            android:id="@+id/widget_wide_time"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text=""
-            android:textSize="10sp"
-            android:textColor="#94A3B8"
-            android:maxLines="1"/>
-
-    </LinearLayout>
+    <TextView
+        android:id="@+id/widget_wide_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text=""
+        android:textSize="9sp"
+        android:textColor="#94A3B8"
+        android:gravity="center"
+        android:maxLines="1"/>
 
 </LinearLayout>
