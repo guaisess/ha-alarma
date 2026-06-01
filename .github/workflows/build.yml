@@ -45,7 +45,9 @@ jobs:
       - name: Generate Android structure with custom API level
         run: |
           flutter create --project-name ha_alarm --org com.homeassistant /tmp/flutter_base
-          # Change compileSdk to 33 BEFORE copying
+          # Replace ALL instances of 35 with 33 in Android files
+          find /tmp/flutter_base/android -type f \( -name "*.gradle" -o -name "*.properties" -o -name "*.xml" \) -exec sed -i 's/35/33/g' {} +
+          # Also set compileSdkVersion explicitly
           sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 33/' /tmp/flutter_base/android/app/build.gradle || true
           cp -r /tmp/flutter_base/android ${{ env.PROJECT_DIR }}/
           cp -r /tmp/flutter_base/test    ${{ env.PROJECT_DIR }}/
