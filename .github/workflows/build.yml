@@ -24,10 +24,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Clear Gradle cache
+      - name: Clear Gradle cache and Android SDK cache
         run: |
           rm -rf ~/.gradle/caches/
           rm -rf ~/.gradle/wrapper/
+          rm -rf /usr/local/lib/android/sdk/platforms/android-35 || true
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -85,7 +86,7 @@ jobs:
           sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "2.0.0"/' $SETTINGS
 
           BUILD_GRADLE=${{ env.PROJECT_DIR }}/android/build.gradle
-          sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 34/' $BUILD_GRADLE || true
+          sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 33/' $BUILD_GRADLE || true
 
           cat >> $BUILD_GRADLE << 'GRADLE'
 
