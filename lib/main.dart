@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
 import 'models.dart';
 import 'firebase_options.dart';
+import 'services.dart';
 import 'screens/home_screen.dart';
 
 // ─── Notificaciones locales (global) ─────────────────────────
@@ -24,6 +25,9 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+
+  // ─── Inicializar widget ANTES de que la app se lance ────
+  await WidgetService.init();
 
   const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
   await _localNotifications.initialize(
