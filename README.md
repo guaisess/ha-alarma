@@ -243,6 +243,12 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.3.6
+- 🐛 Widget 2×1: eliminado `<View>` del separador (no soportado en RemoteViews)
+  - RemoteViews solo admite: LinearLayout, TextView, ImageView, Button...
+  - El `<View>` base causa "Error al cargar el widget" en todos los launchers
+  - Reemplazado por `layout_marginLeft` en el LinearLayout hijo
+
 ### v1.3.5
 - 🐛 Widget: corregido fichero SharedPreferences incorrecto (causa raíz real)
   - Flutter guarda en `FlutterSharedPreferences`, no en `{packageName}_preferences`
