@@ -24,12 +24,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Clear Gradle cache and Android SDK cache
-        run: |
-          rm -rf ~/.gradle/caches/
-          rm -rf ~/.gradle/wrapper/
-          rm -rf /usr/local/lib/android/sdk/platforms/android-35 || true
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -48,11 +42,18 @@ jobs:
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
           echo "Version: $VERSION"
 
-      - name: Generate Android structure
+      - name: Generate Android structure with custom API level
         run: |
           flutter create --project-name ha_alarm --org com.homeassistant /tmp/flutter_base
+          # Change compileSdk to 33 BEFORE copying
+          sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 33/' /tmp/flutter_base/android/app/build.gradle || true
           cp -r /tmp/flutter_base/android ${{ env.PROJECT_DIR }}/
           cp -r /tmp/flutter_base/test    ${{ env.PROJECT_DIR }}/
+
+      - name: Clear Gradle cache
+        run: |
+          rm -rf ~/.gradle/caches/
+          rm -rf ~/.gradle/wrapper/
 
       - name: Patch AndroidManifest
         run: |
@@ -80,13 +81,10 @@ jobs:
           print('Manifest patched OK')
           PYEOF
 
-      - name: Patch Kotlin version and compileSdk
+      - name: Patch Kotlin version
         run: |
           SETTINGS=${{ env.PROJECT_DIR }}/android/settings.gradle
           sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "2.0.0"/' $SETTINGS
-
-          BUILD_GRADLE=${{ env.PROJECT_DIR }}/android/build.gradle
-          sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 33/' $BUILD_GRADLE || true
 
           cat >> $BUILD_GRADLE << 'GRADLE'
 
