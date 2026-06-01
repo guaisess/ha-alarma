@@ -243,6 +243,13 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.3.3
+- 🐛 Widget: arreglado AndroidManifest patching para widgets (receivers)
+- ✅ Mejora robustez del parsing XML — Python en lugar de sed
+- 📌 Agregados try-catch en AlarmWidget y AlarmWidgetWide para manejar errores
+- 🔧 Logging de errores a logcat para debugging de widgets
+- ✓ Receivers correctamente formateados en AndroidManifest.xml
+
 ### v1.3.2
 - 🐛 Widget: corregida inicialización de datos — ahora se cargan valores por defecto ANTES de que se cree el widget
 - 📌 Widget 2×2: ahora muestra el estado de la alarma correctamente
