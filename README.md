@@ -243,6 +243,11 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.3.4
+- 🐛 Widget: añadidos `minWidth`/`minHeight` a los XML del provider (causa raíz del "Error al cargar el widget")
+- 🔧 Permisos de red (INTERNET) restaurados en AndroidManifest
+- ✅ Widget 2×1: ahora compatible con todos los launchers Android
+
 ### v1.3.3
 - 🐛 Widget: arreglado AndroidManifest patching para widgets (receivers)
 - ✅ Mejora robustez del parsing XML — Python en lugar de sed

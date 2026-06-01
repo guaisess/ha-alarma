@@ -76,7 +76,11 @@ jobs:
               'android:label="Alarma Casa"'
           )
 
-          # 3. Add widget receivers before </application>
+          # 3. Add permissions before <application
+          perms = "    <uses-permission android:name=\"android.permission.INTERNET\"/>\n    <uses-permission android:name=\"android.permission.REQUEST_INSTALL_PACKAGES\"/>\n    <uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>\n"
+          txt = txt.replace('<application', perms + '    <application', 1)
+
+          # 4. Add widget receivers before </application>
           receivers = "    <receiver android:name=\".AlarmWidget\" android:exported=\"true\">\n      <intent-filter>\n        <action android:name=\"android.appwidget.action.APPWIDGET_UPDATE\"/>\n      </intent-filter>\n      <meta-data android:name=\"android.appwidget.provider\" android:resource=\"@xml/alarm_widget_info\"/>\n    </receiver>\n    <receiver android:name=\".AlarmWidgetWide\" android:exported=\"true\">\n      <intent-filter>\n        <action android:name=\"android.appwidget.action.APPWIDGET_UPDATE\"/>\n      </intent-filter>\n      <meta-data android:name=\"android.appwidget.provider\" android:resource=\"@xml/alarm_widget_wide_info\"/>\n    </receiver>\n"
           txt = txt.replace('</application>', receivers + '  </application>')
 
