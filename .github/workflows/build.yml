@@ -76,25 +76,13 @@ jobs:
           )
 
           # 3. Add widget receivers before </application>
-          receivers = '''    <receiver android:name=".AlarmWidget" android:exported="true">
-      <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
-      </intent-filter>
-      <meta-data android:name="android.appwidget.provider" android:resource="@xml/alarm_widget_info"/>
-    </receiver>
-    <receiver android:name=".AlarmWidgetWide" android:exported="true">
-      <intent-filter>
-        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
-      </intent-filter>
-      <meta-data android:name="android.appwidget.provider" android:resource="@xml/alarm_widget_wide_info"/>
-    </receiver>
-'''
+          receivers = "    <receiver android:name=\".AlarmWidget\" android:exported=\"true\">\n      <intent-filter>\n        <action android:name=\"android.appwidget.action.APPWIDGET_UPDATE\"/>\n      </intent-filter>\n      <meta-data android:name=\"android.appwidget.provider\" android:resource=\"@xml/alarm_widget_info\"/>\n    </receiver>\n    <receiver android:name=\".AlarmWidgetWide\" android:exported=\"true\">\n      <intent-filter>\n        <action android:name=\"android.appwidget.action.APPWIDGET_UPDATE\"/>\n      </intent-filter>\n      <meta-data android:name=\"android.appwidget.provider\" android:resource=\"@xml/alarm_widget_wide_info\"/>\n    </receiver>\n"
           txt = txt.replace('</application>', receivers + '  </application>')
 
           with open(path, 'w') as f:
               f.write(txt)
 
-          print('✓ Manifest patched successfully')
+          print('Manifest patched successfully')
           PYEOF
 
       - name: Clear Gradle cache
