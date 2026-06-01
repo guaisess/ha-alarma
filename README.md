@@ -243,6 +243,12 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v1.3.2
+- 🐛 Widget: corregida inicialización de datos — ahora se cargan valores por defecto ANTES de que se cree el widget
+- 📌 Widget 2×2: ahora muestra el estado de la alarma correctamente
+- 📌 Widget 2×1: corregido error de carga ("Error al cargar el widget")
+- 🎯 WidgetService.init() se ejecuta en main() para garantizar datos disponibles
+
 ### v1.3.1
 - 📁 Copia de seguridad: ahora permite seleccionar archivos para restaurar
 - 🔧 File picker para elegir archivo JSON desde Descargas/Alarma Casa Backups
