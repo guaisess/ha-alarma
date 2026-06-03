@@ -374,6 +374,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               kRed, Icons.lock_rounded),
                         )),
                       ]),
+                      if (c.showArmModes && state == AlarmState.disarmed) ...[
+                        const SizedBox(height: 12),
+                        _ArmModesRow(controller: c, onConfirm: _confirm),
+                      ],
                       const SizedBox(height: 24),
                       Center(
                         child: TextButton.icon(
@@ -387,6 +391,77 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ],
                   ),
                 ),
+    );
+  }
+}
+
+class _ArmModesRow extends StatelessWidget {
+  final AlarmController controller;
+  final void Function(String action, String label, Color color, IconData icon) onConfirm;
+
+  const _ArmModesRow({required this.controller, required this.onConfirm});
+
+  @override
+  Widget build(BuildContext context) {
+    final modes = [
+      ('arm_home',     'Armar (Casa)',     kOrange, Icons.home_rounded),
+      ('arm_night',    'Armar (Noche)',    kPurple, Icons.bedtime_rounded),
+      ('arm_vacation', 'Armar (Vac.)',     kBlue,   Icons.flight_rounded),
+    ];
+
+    return Row(children: [
+      for (final m in modes) ...[
+        if (m != modes.first) const SizedBox(width: 10),
+        Expanded(child: _ArmModeChip(
+          label: m.$2,
+          icon: m.$4,
+          color: m.$3,
+          busy: controller.actionBusy,
+          onTap: () => onConfirm(m.$1, m.$2, m.$3, m.$4),
+        )),
+      ],
+    ]);
+  }
+}
+
+class _ArmModeChip extends StatelessWidget {
+  final String  label;
+  final IconData icon;
+  final Color   color;
+  final bool    busy;
+  final VoidCallback onTap;
+
+  const _ArmModeChip({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.busy,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: busy ? null : onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
+        ),
+        child: Column(children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 4),
+          Text(label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: isDark ? kText : const Color(0xFF0f172a),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600)),
+        ]),
+      ),
     );
   }
 }

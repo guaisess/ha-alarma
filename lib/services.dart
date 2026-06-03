@@ -56,6 +56,9 @@ class HaService {
 
   Future<void> disarm()  => _call('alarm_disarm',  {'code': config.code});
   Future<void> armAway() => _call('alarm_arm_away', {});
+  Future<void> armHome() => _call('alarm_arm_home', {});
+  Future<void> armNight() => _call('alarm_arm_night', {});
+  Future<void> armCustomBypass() => _call('alarm_arm_custom_bypass', {});
 
   Future<void> _call(String service, Map<String, dynamic> extra) async {
     final uri  = Uri.parse('${config.url}/api/services/alarm_control_panel/$service');
@@ -433,6 +436,7 @@ class WidgetService {
     AlarmState.armedAway:  'Armada',
     AlarmState.armedHome:  'Armada (Casa)',
     AlarmState.armedNight: 'Armada (Noche)',
+    AlarmState.armedCustomBypass: 'Armada (Vacaciones)',
     AlarmState.arming:     'Armando...',
     AlarmState.pending:    'Entrada...',
     AlarmState.triggered:  '¡ALARMA!',

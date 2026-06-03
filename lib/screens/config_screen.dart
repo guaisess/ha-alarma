@@ -23,6 +23,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
 
   bool         _obscureToken = true, _obscureCode = true;
   bool         _saving = false, _testing = false;
+  bool         _showArmModes = false;
   String?      _testResult;
   AppThemeMode _selectedTheme = AppThemeMode.system;
 
@@ -40,7 +41,10 @@ class _ConfigScreenState extends State<ConfigScreen> {
       });
     });
     SharedPreferences.getInstance().then((prefs) {
-      setState(() => _selectedTheme = themeFromString(prefs.getString('app_theme')));
+      setState(() {
+        _selectedTheme = themeFromString(prefs.getString('app_theme'));
+        _showArmModes  = prefs.getBool('show_arm_modes') ?? false;
+      });
     });
   }
 
@@ -51,6 +55,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
     code:           _codeCtrl.text.trim(),
     updateUrl:      _updateUrlCtrl.text.trim(),
     timeoutSeconds: int.tryParse(_timeoutCtrl.text.trim()) ?? kTimeoutSeconds,
+    showArmModes:   _showArmModes,
   );
 
   Future<void> _test() async {
@@ -327,6 +332,27 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 icon: Icons.timer_outlined,
                 keyboardType: TextInputType.number,
                 fieldBg: fieldBg, subtextColor: subtextColor, textColor: textColor,
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(children: [
+                  const Icon(Icons.layers_rounded, color: kSubtext, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Mostrar modos de armado',
+                          style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w500)),
+                      Text('Añade Armar (Casa), Armar (Noche), Armar (Vac.)',
+                          style: TextStyle(color: subtextColor, fontSize: 11)),
+                    ]),
+                  ),
+                  Switch(
+                    value: _showArmModes,
+                    onChanged: (v) => setState(() => _showArmModes = v),
+                    activeColor: kBlue,
+                  ),
+                ]),
               ),
             ],
           ),

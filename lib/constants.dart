@@ -24,6 +24,7 @@ const stateInfo = {
   AlarmState.armedAway:  {'label': 'Armada',         'color': kRed,     'icon': Icons.lock_rounded},
   AlarmState.armedHome:  {'label': 'Armada (Casa)',  'color': kOrange,  'icon': Icons.home_rounded},
   AlarmState.armedNight: {'label': 'Armada (Noche)', 'color': kPurple,  'icon': Icons.bedtime_rounded},
+  AlarmState.armedCustomBypass: {'label': 'Armada (Vacaciones)', 'color': kBlue, 'icon': Icons.flight_rounded},
   AlarmState.arming:     {'label': 'Armando...',     'color': kOrange,  'icon': Icons.lock_clock_outlined},
   AlarmState.pending:    {'label': 'Entrada...',     'color': kYellow,  'icon': Icons.timer_outlined},
   AlarmState.triggered:  {'label': '¡ALARMA!',       'color': kRed,     'icon': Icons.warning_rounded},

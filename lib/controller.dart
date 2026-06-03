@@ -30,6 +30,7 @@ class AlarmController extends ChangeNotifier {
   bool            get refreshing  => _refreshing;
   bool            get actionBusy  => _actionBusy;
   bool            get wsConnected => _wsConnected;
+  bool            get showArmModes => _config?.showArmModes ?? false;
   String?         get error       => _error;
 
   Future<void> init() async {
@@ -149,8 +150,14 @@ class AlarmController extends ChangeNotifier {
     _actionBusy = true;
     notifyListeners();
     try {
-      if (action == 'disarm') await HaService(_config!).disarm();
-      if (action == 'arm')    await HaService(_config!).armAway();
+      final svc = HaService(_config!);
+      switch (action) {
+        case 'disarm':        await svc.disarm();        break;
+        case 'arm':           await svc.armAway();       break;
+        case 'arm_home':      await svc.armHome();       break;
+        case 'arm_night':     await svc.armNight();      break;
+        case 'arm_vacation':  await svc.armCustomBypass(); break;
+      }
       await FeedbackService.confirm();
       await Future.delayed(const Duration(milliseconds: 800));
       await _refresh();

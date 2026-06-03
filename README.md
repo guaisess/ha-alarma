@@ -23,6 +23,7 @@ Desarrollada por **Alfredo Fernández Badía** · Bargas, Toledo · 2025
 - ✅ Cache del último estado para visualización sin conexión
 - ✅ Pull-to-refresh en pantalla principal
 - ✅ Reconexión automática WebSocket con backoff exponencial
+- ✅ Modos de armado adicionales: Casa, Noche, Vacaciones (configurable)
 
 ---
 
@@ -246,6 +247,13 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 ---
 
 ## 📋 Historial de versiones
+
+### v1.5.0
+- 🏠 Nuevos modos de armado: Casa, Noche, Vacaciones
+  - Submenú configurable en Ajustes → Avanzado → Mostrar modos de armado
+  - Desactivado por defecto, actívalo si usas múltiples modos en Alarmo
+  - Cada modo con su color e icono distintivo
+- ✈️ Añadido estado `armed_custom_bypass` (Vacaciones) al sistema
 
 ### v1.4.0
 - ⚡ Eventos en tiempo real vía **WebSocket** (HA WebSocket API)

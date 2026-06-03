@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // ─── Estado de la alarma ──────────────────────────────────────
 enum AlarmState {
-  disarmed, armedAway, armedHome, armedNight,
+  disarmed, armedAway, armedHome, armedNight, armedCustomBypass,
   arming, pending, triggered, unknown
 }
 
@@ -15,6 +15,7 @@ AlarmState parseState(String s) {
     case 'armed_away':  return AlarmState.armedAway;
     case 'armed_home':  return AlarmState.armedHome;
     case 'armed_night': return AlarmState.armedNight;
+    case 'armed_custom_bypass': return AlarmState.armedCustomBypass;
     case 'arming':      return AlarmState.arming;
     case 'pending':     return AlarmState.pending;
     case 'triggered':   return AlarmState.triggered;
@@ -87,6 +88,7 @@ ThemeMode toFlutterThemeMode(AppThemeMode m) {
 class Config {
   final String url, token, entityId, code, updateUrl;
   final int    timeoutSeconds;
+  final bool   showArmModes;
 
   const Config({
     required this.url,
@@ -95,6 +97,7 @@ class Config {
     required this.code,
     required this.updateUrl,
     this.timeoutSeconds = 5,
+    this.showArmModes   = false,
   });
 
   bool get isValid => url.isNotEmpty && token.isNotEmpty && entityId.isNotEmpty;
@@ -109,6 +112,7 @@ class Config {
       code:           await secure.read(key: 'ha_code') ?? p.getString('ha_code') ?? '',
       updateUrl:      p.getString('ha_updateUrl') ?? '',
       timeoutSeconds: p.getInt('ha_timeout')      ?? 5,
+      showArmModes:   p.getBool('show_arm_modes') ?? false,
     );
   }
 
@@ -118,6 +122,7 @@ class Config {
     await p.setString('ha_entity',    entityId);
     await p.setString('ha_updateUrl', updateUrl);
     await p.setInt('ha_timeout',      timeoutSeconds);
+    await p.setBool('show_arm_modes', showArmModes);
 
     final secure = const FlutterSecureStorage();
     if (token.isNotEmpty) await secure.write(key: 'ha_token', value: token);
