@@ -9,7 +9,7 @@ Desarrollada por **Alfredo Fernández Badía** · Bargas, Toledo · 2025
 ## Características
 
 - ✅ Armar y desarmar con confirmación antes de ejecutar
-- ✅ Estado en tiempo real (actualización automática cada 15s)
+- ✅ Estado en tiempo real vía **WebSocket** (eventos push instantáneos)
 - ✅ Cuenta atrás visual durante el armado y la entrada
 - ✅ Aviso de sensores abiertos que bloquean el armado
 - ✅ Pantalla de configuración con prueba de conexión y timeout configurable
@@ -19,7 +19,10 @@ Desarrollada por **Alfredo Fernández Badía** · Bargas, Toledo · 2025
 - ✅ Historial local de cambios de estado (últimos 50)
 - ✅ Widget en la pantalla de inicio (2×2 y 2×1)
 - ✅ Notificaciones push via Firebase Cloud Messaging
-- ✅ Icono personalizado rojo carmesí con escudo y señal de alarma
+- ✅ Token y código almacenados cifrados (flutter_secure_storage)
+- ✅ Cache del último estado para visualización sin conexión
+- ✅ Pull-to-refresh en pantalla principal
+- ✅ Reconexión automática WebSocket con backoff exponencial
 
 ---
 
@@ -44,7 +47,8 @@ ha-alarma/
 │   ├── main.dart                  # Punto de entrada y AlarmApp
 │   ├── constants.dart             # Colores y constantes
 │   ├── models.dart                # Modelos de datos e historial
-│   ├── services.dart              # HaService, FeedbackService, UpdateService, WidgetService
+│   ├── services.dart              # HaService, HaWebSocketService, StateCache, etc.
+│   ├── controller.dart            # AlarmController (ChangeNotifier)
 │   ├── widgets.dart               # Widgets reutilizables
 │   ├── firebase_options.dart      # Configuración Firebase (generado en CI)
 │   └── screens/
@@ -210,6 +214,7 @@ automation:
 |---|---|---|
 | `http` | ^1.2.0 | API REST de HA |
 | `shared_preferences` | ^2.2.2 | Configuración local |
+| `flutter_secure_storage` | ^9.2.2 | Token y código cifrados |
 | `package_info_plus` | ^8.0.0 | Versión instalada |
 | `dio` | ^5.4.0 | Descarga APK con progreso |
 | `open_file` | ^3.3.2 | Instalación del APK |
@@ -220,7 +225,6 @@ automation:
 | `flutter_local_notifications` | ^17.2.2 | Notificaciones locales |
 | `vibration` | ^3.1.0 | Feedback háptico |
 | `intl` | ^0.19.0 | Formato de fechas |
-| `home_widget` | ^0.6.0 | Widget en pantalla de inicio |
 | `flutter_launcher_icons` | ^0.13.1 | Generación del icono |
 
 ---
@@ -242,6 +246,24 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 ---
 
 ## 📋 Historial de versiones
+
+### v1.4.0
+- ⚡ Eventos en tiempo real vía **WebSocket** (HA WebSocket API)
+  - Conexión persistente con reconexión automática (backoff exponencial)
+  - Actualización instantánea del estado sin polling
+  - Polling cada 30s como fallback cuando WebSocket está activo
+- 🔒 Token y código almacenados cifrados con `flutter_secure_storage`
+  - Migración automática desde SharedPreferences
+  - Backup/Restore compatible con el nuevo almacenamiento
+- 📦 Nueva arquitectura con **AlarmController** (ChangeNotifier)
+  - Lógica separada de la UI, más mantenible
+  - Estado preservado al navegar a configuración
+- 💾 Cache del último estado conocido en SharedPreferences
+  - Muestra el último estado mientras se reconecta
+- 📱 Pull-to-refresh en pantalla principal
+- 📜 Auto-scroll al último evento en el historial
+- 🐛 Todos los catch blocks ahora registran errores con debugPrint
+- 🎯 Feedback de carga mejorado en guardado de configuración
 
 ### v1.3.7
 - 🎨 Widget 2×1: rediseño — sin icono, tres líneas centradas

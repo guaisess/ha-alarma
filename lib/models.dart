@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // ─── Estado de la alarma ──────────────────────────────────────
 enum AlarmState {
@@ -39,6 +40,20 @@ class AlarmStateData {
   int  get remaining   => delay != null ? (delay! - elapsed).clamp(0, delay!) : 0;
   bool get hasCountdown =>
       (state == AlarmState.arming || state == AlarmState.pending) && delay != null;
+
+  Map<String, dynamic> toJson() => {
+    'state':        state.name,
+    'lastChanged':  lastChanged.toIso8601String(),
+    'delay':        delay,
+    'openSensors':  openSensors,
+  };
+
+  factory AlarmStateData.fromJson(Map<String, dynamic> json) => AlarmStateData(
+    state:       parseState(json['state'] as String),
+    lastChanged: DateTime.parse(json['lastChanged'] as String),
+    delay:       json['delay'] as int?,
+    openSensors: (json['openSensors'] as List?)?.cast<String>() ?? [],
+  );
 }
 
 // ─── Tema ─────────────────────────────────────────────────────
@@ -86,11 +101,12 @@ class Config {
 
   static Future<Config> load() async {
     final p = await SharedPreferences.getInstance();
+    final secure = const FlutterSecureStorage();
     return Config(
       url:            p.getString('ha_url')       ?? '',
-      token:          p.getString('ha_token')     ?? '',
+      token:          await secure.read(key: 'ha_token') ?? p.getString('ha_token') ?? '',
       entityId:       p.getString('ha_entity')    ?? '',
-      code:           p.getString('ha_code')      ?? '',
+      code:           await secure.read(key: 'ha_code') ?? p.getString('ha_code') ?? '',
       updateUrl:      p.getString('ha_updateUrl') ?? '',
       timeoutSeconds: p.getInt('ha_timeout')      ?? 5,
     );
@@ -99,11 +115,16 @@ class Config {
   Future<void> save() async {
     final p = await SharedPreferences.getInstance();
     await p.setString('ha_url',       url);
-    await p.setString('ha_token',     token);
     await p.setString('ha_entity',    entityId);
-    await p.setString('ha_code',      code);
     await p.setString('ha_updateUrl', updateUrl);
     await p.setInt('ha_timeout',      timeoutSeconds);
+
+    final secure = const FlutterSecureStorage();
+    if (token.isNotEmpty) await secure.write(key: 'ha_token', value: token);
+    if (code.isNotEmpty) await secure.write(key: 'ha_code', value: code);
+
+    if (p.containsKey('ha_token')) await p.remove('ha_token');
+    if (p.containsKey('ha_code'))  await p.remove('ha_code');
   }
 }
 

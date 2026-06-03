@@ -12,6 +12,7 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   List<HistoryEntry> _entries = [];
   bool _loading = true;
+  final _scrollCtrl = ScrollController();
 
   @override
   void initState() {
@@ -21,7 +22,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _load() async {
     final entries = await HistoryService.load();
-    if (mounted) setState(() { _entries = entries; _loading = false; });
+    if (mounted) {
+      setState(() { _entries = entries; _loading = false; });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_entries.isNotEmpty && _scrollCtrl.hasClients) {
+          _scrollCtrl.animateTo(0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _clear() async {

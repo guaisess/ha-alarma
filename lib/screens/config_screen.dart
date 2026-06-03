@@ -75,7 +75,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('✅ Configuración guardada'),
           backgroundColor: kGreen));
-      Navigator.pop(context);
+      Navigator.pop(context, true);
     }
   }
 
