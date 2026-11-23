@@ -1,10 +1,14 @@
-# Versión 2026.11.14
+# Versión 2026.11.15
 # Compila la app como paquete AAB firmado para Google Play (ya no se publica APK suelto).
 name: Build AAB (Google Play)
 
 on:
   push:
     branches: [ main ]
+    # Cambios solo de documentación no recompilan la app
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
   workflow_dispatch:
 
 jobs:

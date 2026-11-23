@@ -234,6 +234,10 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v2026.11.15
+- 📄 Política de privacidad en `docs/privacidad.md`, publicada con GitHub Pages (requisito de Google Play)
+- 🛠️ CI: los cambios solo de documentación (`docs/`, `*.md`) no recompilan la app
+
 ### v2026.11.14
 - 🛠️ CI: Java 21 (el lint de AGP 9 fallaba con Java 17 en `firebase_core`)
 
