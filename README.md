@@ -234,6 +234,9 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v2026.11.13
+- 🛠️ CI: compileSdk 37 y desugaring de bibliotecas Java (exigidos por flutter_local_notifications y androidx.core 1.19)
+
 ### v2026.11.12
 - 📦 Distribución por Google Play: nuevo identificador `es.fernandezbadia.alarmacasa` (hay que reinstalar y registrar la app en Firebase con ese paquete)
 - 🧹 Se elimina la auto-actualización por APK (permiso `REQUEST_INSTALL_PACKAGES`, `version.json`, `dio`, `open_file`, `permission_handler`); Play no la permite

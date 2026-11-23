@@ -1,4 +1,4 @@
-# Versión 2026.11.12
+# Versión 2026.11.13
 # Compila la app como paquete AAB firmado para Google Play (ya no se publica APK suelto).
 name: Build AAB (Google Play)
 
@@ -123,6 +123,23 @@ jobs:
         run: |
           echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode \
             > ${{ env.PROJECT_DIR }}/android/app/google-services.json
+
+      # flutter_local_notifications y androidx.core 1.19 exigen compileSdk 37 y desugaring
+      - name: Configure Gradle (compileSdk y desugaring)
+        run: |
+          cat >> ${{ env.PROJECT_DIR }}/android/app/build.gradle.kts << 'KTS'
+
+          android {
+              compileSdk = 37
+              compileOptions {
+                  isCoreLibraryDesugaringEnabled = true
+              }
+          }
+
+          dependencies {
+              coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+          }
+          KTS
 
       # Las contraseñas no se escriben en el fichero: Gradle las lee del entorno
       - name: Setup keystore and signing
