@@ -1,4 +1,5 @@
-// Versión 2026.11.5
+// Versión 2026.11.6
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -9,6 +10,7 @@ import '../services.dart';
 import '../controller.dart';
 import '../widgets.dart';
 import '../zones_widget.dart';
+import '../push_nav.dart';
 import 'config_screen.dart';
 import 'history_screen.dart';
 import 'about_screen.dart';
@@ -23,6 +25,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _controller = AlarmController();
+  final _zonasKey = GlobalKey();   // para desplazar la lista hasta las zonas
+  String? _zonaPendiente;          // zona pedida por una notificación, aún sin mostrar
+  String? _zonaResaltada;
+  Timer?  _timerResalte;
   bool _updateDialogOpen = false; // evita abrir un segundo aviso mientras hay uno
 
   @override
@@ -30,12 +36,41 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _controller.addListener(_onChanged);
+    PushNav.zona.addListener(_onPushZona);
     _controller.init();
     _initNotifications();
   }
 
+  /// Una notificación con zona fue tocada: volver a la principal y enfocarla
+  void _onPushZona() {
+    final z = PushNav.zona.value;
+    if (z == null || !mounted) return;
+    _zonaPendiente = z;
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    _intentarEnfocar();
+  }
+
+  /// Resalta y muestra la zona pedida en cuanto las zonas están cargadas
+  void _intentarEnfocar() {
+    final z = _zonaPendiente;
+    if (z == null || !_controller.zones.any((e) => e.def.label == z)) return;
+    _zonaPendiente = null;
+    setState(() => _zonaResaltada = z);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _zonasKey.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 400),
+            alignment: 0.5);
+      }
+    });
+    _timerResalte?.cancel();
+    _timerResalte = Timer(const Duration(seconds: 5),
+        () { if (mounted) setState(() => _zonaResaltada = null); });
+  }
+
   void _onChanged() {
     if (mounted) setState(() {});
+    _intentarEnfocar();
     final upd = _controller.pendingUpdate;
     if (upd != null && mounted) {
       _controller.clearPendingUpdate();
@@ -67,6 +102,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         await prefs.setString('fcm_token', newToken);
       });
 
+      // Tocar el aviso con la app en segundo plano o cerrada
+      FirebaseMessaging.onMessageOpenedApp
+          .listen((m) => PushNav.abrir(m.data['zona'] as String?));
+      final inicial = await messaging.getInitialMessage();
+      if (inicial != null) PushNav.abrir(inicial.data['zona'] as String?);
+
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         final n = message.notification;
         if (n == null) return;
@@ -83,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               icon: '@mipmap/ic_launcher',
             ),
           ),
+          payload: message.data['zona'] as String?, // zona para abrirla al tocar
         );
       });
     } catch (e) {
@@ -296,6 +338,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _controller.removeListener(_onChanged);
+    PushNav.zona.removeListener(_onPushZona);
+    _timerResalte?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -440,7 +484,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ],
                       if (c.zones.isNotEmpty) ...[
                         const SizedBox(height: 24),
-                        ZonesSection(zones: c.zones, busy: c.actionBusy, names: c.sensorNames, onArm: _confirmZone),
+                        KeyedSubtree(key: _zonasKey, child: ZonesSection(zones: c.zones, busy: c.actionBusy, names: c.sensorNames, highlight: _zonaResaltada, onArm: _confirmZone)),
                       ],
                       const SizedBox(height: 24),
                       Center(

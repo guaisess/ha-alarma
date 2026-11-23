@@ -1,4 +1,4 @@
-// Versión 2026.11.4
+// Versión 2026.11.6
 import 'package:flutter/material.dart';
 import 'constants.dart';
 import 'models.dart';
@@ -10,11 +10,12 @@ class ZonesSection extends StatelessWidget {
   final List<ZoneData> zones;
   final bool busy;
   final Map<String, String> names; // nombres legibles de sensores
+  final String? highlight;         // zona resaltada al abrir desde una notificación
   final void Function(ZoneData zone) onArm;
 
   const ZonesSection({
     super.key, required this.zones, required this.busy, required this.onArm,
-    this.names = const {},
+    this.names = const {}, this.highlight,
   });
 
   String _name(String id) {
@@ -44,8 +45,16 @@ class ZonesSection extends StatelessWidget {
   Widget _row(ZoneData z, Color text, Color subtext) {
     final info  = stateInfo[z.state]!;
     final color = info['color'] as Color;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      decoration: BoxDecoration(
+        color: highlight == z.def.label ? kBlue.withOpacity(0.15) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+            color: highlight == z.def.label ? kBlue : Colors.transparent, width: 1.5),
+      ),
       child: Row(children: [
         Icon(z.def.icon, color: subtext, size: 22),
         const SizedBox(width: 12),

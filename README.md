@@ -248,6 +248,9 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v2026.11.6
+- 🔔 Al tocar una notificación con zona, la app se abre, se desplaza hasta las zonas y resalta la zona 5 s (app abierta, en segundo plano o cerrada)
+
 ### v2026.11.5
 - 🔄 Actualización: también se comprueba al volver a la app (máx. cada 30 min); nunca se abren dos avisos a la vez
 
