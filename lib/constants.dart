@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'models.dart';
 
 // ─── Constantes de configuración ─────────────────────────────
-// Versión 2026.11.4
+// Versión 2026.11.5
 const kTimeoutSeconds = 5;   // Timeout REST por defecto
 const kPollSeconds    = 15;  // Sondeo REST sin WebSocket
 const kPollWsSeconds  = 30;  // Sondeo REST con WebSocket conectado
@@ -10,6 +10,7 @@ const kMaxRetries     = 3;
 const kWsConnectTimeoutSeconds = 10;           // Timeout de conexión WebSocket
 const kWsBackoff      = [1, 2, 4, 8, 15, 30];  // Esperas de reconexión (s)
 const kUpdateCheckTimeoutSeconds = 10;         // Timeout de comprobación de versión
+const kUpdateCheckIntervalMinutes = 30;        // Mínimo entre comprobaciones (arranque y reanudar)
 const kLabelRefreshSeconds = 5;                // Refresco de la etiqueta "Hace Xs"
 const kHistoryMaxSize = 100;                   // Entradas máximas del historial
 const kNotifChannelId   = 'ha_alarm_channel';

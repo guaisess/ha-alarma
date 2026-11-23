@@ -248,6 +248,9 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v2026.11.5
+- 🔄 Actualización: también se comprueba al volver a la app (máx. cada 30 min); nunca se abren dos avisos a la vez
+
 ### v2026.11.4
 - 🕘 Historial: registra también los cambios de cada zona; marca con 🤖 los desarmes hechos por los robots (hasta 100 entradas)
 - 🧩 Widget: muestra las zonas cuyo estado difiere del maestro (p. ej. "🤖 PB desarmada")

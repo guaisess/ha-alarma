@@ -15,7 +15,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'constants.dart';
 import 'models.dart';
 
-// Versión 2026.11.4
+// Versión 2026.11.5
 // ─── Parseo común de un objeto "state" de HA (REST y WebSocket) ───
 AlarmStateData parseStateData(Map<String, dynamic> data) {
   final attrs = data['attributes'] as Map<String, dynamic>? ?? {};
@@ -321,7 +321,7 @@ class UpdateInfo {
 }
 
 class UpdateService {
-  static bool _checkedThisSession = false;
+  static DateTime? _ultimaComprobacion; // última lectura correcta de version.json
 
   static bool _isNewer(String remote, String current) {
     List<int> parse(String v) =>
@@ -338,13 +338,17 @@ class UpdateService {
   }
 
   static Future<UpdateInfo?> check(String url) async {
-    if (_checkedThisSession) return null;
+    final ult = _ultimaComprobacion;
+    if (ult != null &&
+        DateTime.now().difference(ult).inMinutes < kUpdateCheckIntervalMinutes) {
+      return null;
+    }
     try {
       final res = await http
           .get(Uri.parse(url))
           .timeout(const Duration(seconds: kUpdateCheckTimeoutSeconds));
       if (res.statusCode != 200) return null;
-      _checkedThisSession = true; // solo si se leyó bien; si falla, se reintenta
+      _ultimaComprobacion = DateTime.now(); // solo si se leyó bien; si falla, se reintenta
       final data          = jsonDecode(res.body);
       final remoteVersion = data['version'] as String;
       final apkUrl        = data['url'] as String;

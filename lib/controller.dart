@@ -1,4 +1,4 @@
-// Versión 2026.11.4
+// Versión 2026.11.5
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'constants.dart';
@@ -313,10 +313,19 @@ class AlarmController extends ChangeNotifier {
     }
   }
 
+  /// Comprueba si hay versión nueva (arranque y al volver a la app)
+  Future<void> checkUpdate() async {
+    if (_config == null || _config!.updateUrl.isEmpty) return;
+    await _checkUpdate();
+  }
+
   Future<void> _checkUpdate() async {
     try {
       final info = await UpdateService.check(_config!.updateUrl);
-      if (info != null) _pendingUpdate = info;
+      if (info != null) {
+        _pendingUpdate = info;
+        notifyListeners(); // para que la pantalla muestre el aviso ya
+      }
     } catch (e) {
       debugPrint('[Controller] Update check error: $e');
     }

@@ -1,4 +1,4 @@
-// Versión 2026.11.4
+// Versión 2026.11.5
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -23,6 +23,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _controller = AlarmController();
+  bool _updateDialogOpen = false; // evita abrir un segundo aviso mientras hay uno
 
   @override
   void initState() {
@@ -35,9 +36,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _onChanged() {
     if (mounted) setState(() {});
-    if (_controller.pendingUpdate != null && mounted) {
-      _showUpdateDialog(_controller.pendingUpdate!);
+    final upd = _controller.pendingUpdate;
+    if (upd != null && mounted) {
       _controller.clearPendingUpdate();
+      if (!_updateDialogOpen) _showUpdateDialog(upd);
     }
   }
 
@@ -45,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       Future.delayed(const Duration(milliseconds: 800), _controller.refresh);
+      _controller.checkUpdate();
     }
   }
 
@@ -91,6 +94,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     double  progress   = 0;
     bool    downloading = false;
     String? dlError;
+    _updateDialogOpen = true;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -168,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         ),
       ),
-    );
+    ).whenComplete(() => _updateDialogOpen = false);
   }
 
   Future<void> _goConfig() async {
