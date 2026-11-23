@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'models.dart';
 
 // ─── Constantes de configuración ─────────────────────────────
-// Versión 2026.11.2
+// Versión 2026.11.3
 const kTimeoutSeconds = 5;   // Timeout REST por defecto
 const kPollSeconds    = 15;  // Sondeo REST sin WebSocket
 const kPollWsSeconds  = 30;  // Sondeo REST con WebSocket conectado

@@ -1,4 +1,4 @@
-// Versión 2026.11.2
+// Versión 2026.11.3
 import 'package:flutter/material.dart';
 import 'constants.dart';
 import 'models.dart';
@@ -9,11 +9,19 @@ import 'models.dart';
 class ZonesSection extends StatelessWidget {
   final List<ZoneData> zones;
   final bool busy;
+  final Map<String, String> names; // nombres legibles de sensores
   final void Function(ZoneData zone) onArm;
 
   const ZonesSection({
     super.key, required this.zones, required this.busy, required this.onArm,
+    this.names = const {},
   });
+
+  String _name(String id) {
+    final n = names[id];
+    if (n != null && n.isNotEmpty) return n;
+    return id.split('.').last.replaceAll('_', ' ');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +55,12 @@ class ZonesSection extends StatelessWidget {
           Text(info['label'] as String, style: TextStyle(color: color, fontSize: 12)),
           if (z.autoDisarmed)
             Text('🤖 Desarmada por robot',
+                style: TextStyle(color: subtext, fontSize: 11)),
+          if (z.openSensors.isNotEmpty)
+            Text('⚠️ Abiertos: ${z.openSensors.map(_name).join(', ')}',
+                style: const TextStyle(color: kRed, fontSize: 11)),
+          if (z.bypassedSensors.isNotEmpty)
+            Text('Anulados: ${z.bypassedSensors.map(_name).join(', ')}',
                 style: TextStyle(color: subtext, fontSize: 11)),
         ])),
         if (z.canArm)

@@ -1,4 +1,4 @@
-// Versión 2026.11.2
+// Versión 2026.11.3
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -75,7 +75,11 @@ class ZoneData {
   final ZoneDef    def;
   final AlarmState state;
   final bool       autoDisarmed;
-  const ZoneData({required this.def, required this.state, required this.autoDisarmed});
+  final List<String> openSensors, bypassedSensors;
+  const ZoneData({
+    required this.def, required this.state, required this.autoDisarmed,
+    this.openSensors = const [], this.bypassedSensors = const [],
+  });
 
   /// Solo se puede armar una zona que un robot desarmó y aún no se rearmó
   bool get canArm => autoDisarmed && state == AlarmState.disarmed;

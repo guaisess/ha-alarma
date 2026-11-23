@@ -9,7 +9,7 @@
 ## Version bump workflow (every change)
 1. `pubspec.yaml`: formato `AAAA.MM.V+B` (ej. `2026.11.1+41`): `V` +1 en cada cambio y vuelve a 1 al empezar el mes; `B` (build number) +1 siempre
    - Versionar también los ficheros modificados (cabecera `// Versión AAAA.MM.V`)
-2. `version.json`: match `pubspec.yaml` version string
+2. `version.json`: NO editarlo a mano; lo actualiza el workflow tras publicar el release (evita 404 en la actualización)
 3. `README.md`: add changelog entry at top of version history section
 
 ## Key architecture

@@ -1,4 +1,4 @@
-// Versión 2026.11.2
+// Versión 2026.11.3
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'constants.dart';
@@ -14,7 +14,8 @@ class AlarmController extends ChangeNotifier {
   bool             _actionBusy     = false;
   bool             _wsConnected    = false;
   String?          _error;
-  Map<String, String> _zoneRaw = {}; // estado de zonas y marcas de robot
+  Map<String, Map<String, dynamic>> _zoneRaw = {}; // estado+atributos de zonas y marcas de robot
+  Map<String, String> _sensorNames = {};            // entidad -> nombre legible
 
   HaWebSocketService? _ws;
   Timer?  _pollTimer;
@@ -38,10 +39,31 @@ class AlarmController extends ChangeNotifier {
       if (_zoneRaw.containsKey(d.entityId))
         ZoneData(
           def: d,
-          state: parseState(_zoneRaw[d.entityId]!),
-          autoDisarmed: d.autoFlagEntity != null && _zoneRaw[d.autoFlagEntity] == 'on',
+          state: parseState(_zoneRaw[d.entityId]!['state'] as String? ?? 'unknown'),
+          autoDisarmed: d.autoFlagEntity != null &&
+              _zoneRaw[d.autoFlagEntity]?['state'] == 'on',
+          openSensors: sensorsFromAttr(_attrs(d.entityId)['open_sensors']),
+          bypassedSensors: sensorsFromAttr(_attrs(d.entityId)['bypassed_sensors']),
         ),
   ];
+
+  Map<String, dynamic> _attrs(String id) =>
+      _zoneRaw[id]?['attributes'] as Map<String, dynamic>? ?? const {};
+
+  /// Nombres legibles de sensores ya consultados
+  Map<String, String> get sensorNames => _sensorNames;
+
+  /// Consulta una sola vez el nombre de los sensores abiertos/anulados nuevos
+  Future<void> _loadSensorNames() async {
+    if (_config == null || !_config!.isValid) return;
+    final ids = <String>{
+      ...?_stateData?.openSensors,
+      for (final z in zones) ...[...z.openSensors, ...z.bypassedSensors],
+    }.where((i) => !_sensorNames.containsKey(i)).toList();
+    if (ids.isEmpty) return;
+    _sensorNames = {..._sensorNames, ...await HaService(_config!).getFriendlyNames(ids)};
+    notifyListeners();
+  }
 
   /// Zonas desarmadas por la automatización de robots
   List<ZoneData> get robotZones => zones.where((z) => z.autoDisarmed).toList();
@@ -103,8 +125,9 @@ class AlarmController extends ChangeNotifier {
       _onWsState(parseStateData(s));
       return;
     }
-    _zoneRaw = {..._zoneRaw, id: s['state'] as String? ?? 'unknown'};
+    _zoneRaw = {..._zoneRaw, id: s};
     notifyListeners();
+    _loadSensorNames();
   }
 
   /// Entidades que escucha el WebSocket (filtradas en el servidor)
@@ -117,6 +140,7 @@ class AlarmController extends ChangeNotifier {
     if (_config == null || !_config!.isValid) return;
     _zoneRaw = await HaService(_config!).getZoneStates();
     notifyListeners();
+    _loadSensorNames();
   }
 
   /// Arma una zona que no se rearmó sola tras la limpieza del robot
@@ -148,6 +172,7 @@ class AlarmController extends ChangeNotifier {
     WidgetService.update(data.state);
     StateCache.save(data);
     notifyListeners();
+    _loadSensorNames();
   }
 
   void _startPolling([int? interval]) {

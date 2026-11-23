@@ -248,6 +248,11 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v2026.11.3
+- 🔄 Actualización: un error de descarga ya no marca la versión como vista; se vuelve a ofrecer. Tampoco se bloquea si falló la lectura de `version.json`
+- 🛠️ CI: `version.json` solo se actualiza cuando el release está publicado (evita el 404 al descargar el APK)
+- 🚪 Sensores abiertos y anulados por zona, con nombre legible obtenido de HA (también en el aviso del estado maestro)
+
 ### v2026.11.2
 - 🗺️ Zonas de Alarmo (Perímetro, Planta baja, Planta alta) en solo lectura bajo los botones de la pantalla principal
 - 🤖 Indicador "Desarmada por robot" (según `input_boolean.robots_alarma_desarmada_auto_*`) y botón "Armar" solo en zonas que el robot no rearmó

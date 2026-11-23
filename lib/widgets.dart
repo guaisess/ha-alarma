@@ -1,3 +1,4 @@
+// Versión 2026.11.3
 import 'package:flutter/material.dart';
 import 'constants.dart';
 import 'models.dart';
@@ -50,9 +51,12 @@ class CountdownBar extends StatelessWidget {
 // ─── Advertencia sensores abiertos ───────────────────────────
 class OpenSensorsWarning extends StatelessWidget {
   final List<String> sensors;
-  const OpenSensorsWarning({super.key, required this.sensors});
+  final Map<String, String> names; // nombres legibles obtenidos de HA
+  const OpenSensorsWarning({super.key, required this.sensors, this.names = const {}});
 
   String _friendlyName(String entityId) {
+    final n = names[entityId];
+    if (n != null && n.isNotEmpty) return n;
     return entityId
         .split('.')
         .last

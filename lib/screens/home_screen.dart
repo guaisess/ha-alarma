@@ -1,4 +1,4 @@
-// Versión 2026.11.2
+// Versión 2026.11.3
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -125,8 +125,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               Row(children: [
                 Expanded(child: OutlinedButton(
                   onPressed: downloading ? null : () async {
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setString('last_update_notified', info.version);
+                    // Solo se silencia la versión si el usuario la descarta sin error previo
+                    if (dlError == null) {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setString('last_update_notified', info.version);
+                    }
                     if (ctx.mounted) Navigator.pop(ctx);
                   },
                   style: OutlinedButton.styleFrom(
@@ -142,8 +145,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   onPressed: downloading ? null : () async {
                     setS(() { downloading = true; dlError = null; });
                     try {
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setString('last_update_notified', info.version);
+                      // No se marca como "vista": si falla, se ofrece de nuevo
                       await UpdateService.downloadAndInstall(
                           info.apkUrl, (p) => setS(() => progress = p));
                       if (ctx.mounted) Navigator.pop(ctx);
@@ -396,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   state == AlarmState.triggered ||
                                   state == AlarmState.disarmed)) ...[
                             const SizedBox(height: 14),
-                            OpenSensorsWarning(sensors: data.openSensors),
+                            OpenSensorsWarning(sensors: data.openSensors, names: c.sensorNames),
                           ],
                         ]),
                       ),
@@ -434,7 +436,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ],
                       if (c.zones.isNotEmpty) ...[
                         const SizedBox(height: 24),
-                        ZonesSection(zones: c.zones, busy: c.actionBusy, onArm: _confirmZone),
+                        ZonesSection(zones: c.zones, busy: c.actionBusy, names: c.sensorNames, onArm: _confirmZone),
                       ],
                       const SizedBox(height: 24),
                       Center(

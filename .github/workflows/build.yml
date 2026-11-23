@@ -188,3 +188,31 @@ jobs:
           files: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # version.json se actualiza SOLO cuando el release ya está publicado,
+      # así las apps no ven una versión cuyo APK aún no existe (404).
+      # El push con GITHUB_TOKEN no relanza el workflow.
+      - name: Publicar version.json tras el release
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B main origin/main
+          VJ="${{ env.PROJECT_DIR }}/version.json"
+          ACTUAL=$(python3 -c "import json;print(json.load(open('$VJ'))['version'])" 2>/dev/null || echo 0)
+          MAYOR=$(printf '%s\n%s\n' "$ACTUAL" "$APP_VERSION" | sort -V | tail -1)
+          # No retroceder ni repetir si otro build igual o más nuevo ya publicó
+          if [ "$ACTUAL" = "$APP_VERSION" ] || [ "$MAYOR" != "$APP_VERSION" ]; then
+            echo "version.json ya está en $ACTUAL, nada que hacer"
+            exit 0
+          fi
+          python3 - "$VJ" "$APP_VERSION" "${{ github.repository }}" <<'PYEOF'
+          import json, sys
+          ruta, ver, repo = sys.argv[1:4]
+          datos = {"version": ver,
+                   "url": f"https://github.com/{repo}/releases/download/v{ver}/app-release.apk"}
+          open(ruta, "w").write(json.dumps(datos, indent=2) + "\n")
+          PYEOF
+          git add "$VJ"
+          git commit -m "chore: version.json -> $APP_VERSION [skip ci]"
+          git push origin main

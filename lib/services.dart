@@ -15,7 +15,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'constants.dart';
 import 'models.dart';
 
-// Versión 2026.11.2
+// Versión 2026.11.3
 // ─── Parseo común de un objeto "state" de HA (REST y WebSocket) ───
 AlarmStateData parseStateData(Map<String, dynamic> data) {
   final attrs = data['attributes'] as Map<String, dynamic>? ?? {};
@@ -25,15 +25,18 @@ AlarmStateData parseStateData(Map<String, dynamic> data) {
   int? delay;
   if (attrs.containsKey('delay')) delay = (attrs['delay'] as num?)?.toInt();
 
-  List<String> openSensors = [];
-  final raw = attrs['open_sensors'];
-  if (raw is Map)  openSensors = raw.keys.map((k) => k.toString()).toList();
-  if (raw is List) openSensors = raw.map((e) => e.toString()).toList();
-
   return AlarmStateData(
     state: parseState(data['state'] as String? ?? 'unknown'),
-    lastChanged: lastChanged, delay: delay, openSensors: openSensors,
+    lastChanged: lastChanged, delay: delay,
+    openSensors: sensorsFromAttr(attrs['open_sensors']),
   );
+}
+
+/// Alarmo manda los sensores como mapa {entidad: estado} o como lista
+List<String> sensorsFromAttr(dynamic raw) {
+  if (raw is Map)  return raw.keys.map((k) => k.toString()).toList();
+  if (raw is List) return raw.map((e) => e.toString()).toList();
+  return const [];
 }
 
 // ─── Servicio Home Assistant ──────────────────────────────────
@@ -68,15 +71,24 @@ class HaService {
     }
   }
 
-  /// Estados (texto) de las zonas y de sus marcas de desarme automático
-  Future<Map<String, String>> getZoneStates() async {
+  /// Estados completos (state + attributes) de las zonas y sus marcas de robot
+  Future<Map<String, Map<String, dynamic>>> getZoneStates() async {
     final ids = [
       for (final z in kZones) ...[z.entityId, if (z.autoFlagEntity != null) z.autoFlagEntity!],
     ];
     final raws = await Future.wait(ids.map(_getRaw));
     return {
       for (var i = 0; i < ids.length; i++)
-        if (raws[i] != null) ids[i]: raws[i]!['state'] as String? ?? 'unknown',
+        if (raws[i] != null) ids[i]: raws[i]!,
+    };
+  }
+
+  /// Nombres legibles de sensores; '' si no se pudo obtener (se evita repetir la consulta)
+  Future<Map<String, String>> getFriendlyNames(List<String> ids) async {
+    final raws = await Future.wait(ids.map(_getRaw));
+    return {
+      for (var i = 0; i < ids.length; i++)
+        ids[i]: ((raws[i]?['attributes'] as Map?)?['friendly_name'] as String?) ?? '',
     };
   }
 
@@ -327,12 +339,12 @@ class UpdateService {
 
   static Future<UpdateInfo?> check(String url) async {
     if (_checkedThisSession) return null;
-    _checkedThisSession = true;
     try {
       final res = await http
           .get(Uri.parse(url))
           .timeout(const Duration(seconds: kUpdateCheckTimeoutSeconds));
       if (res.statusCode != 200) return null;
+      _checkedThisSession = true; // solo si se leyó bien; si falla, se reintenta
       final data          = jsonDecode(res.body);
       final remoteVersion = data['version'] as String;
       final apkUrl        = data['url'] as String;

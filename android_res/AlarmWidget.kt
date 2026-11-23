@@ -1,4 +1,4 @@
-// Versión 2026.11.2
+// Versión 2026.11.3
 package com.homeassistant.ha_alarm
 
 import android.appwidget.AppWidgetManager
