@@ -1,3 +1,4 @@
+// Versión 2026.11.12
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -54,7 +55,7 @@ class _AboutScreenState extends State<AboutScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(26),
               boxShadow: [BoxShadow(
-                  color: kBlue.withOpacity(0.2), blurRadius: 24, spreadRadius: 2)],
+                  color: kBlue.withValues(alpha: 0.2), blurRadius: 24, spreadRadius: 2)],
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(26),

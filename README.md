@@ -13,7 +13,7 @@ Desarrollada por **Alfredo Fernández Badía** · Bargas, Toledo · 2025
 - ✅ Cuenta atrás visual durante el armado y la entrada
 - ✅ Aviso de sensores abiertos que bloquean el armado
 - ✅ Pantalla de configuración con prueba de conexión y timeout configurable
-- ✅ Actualizaciones automáticas desde una URL configurable
+- ✅ Distribución por Google Play (prueba interna); las actualizaciones las hace Play
 - ✅ Tema claro, oscuro o seguir al sistema
 - ✅ Vibración y beep al ejecutar acciones
 - ✅ Historial local de cambios de estado (últimos 50)
@@ -33,7 +33,7 @@ Desarrollada por **Alfredo Fernández Badía** · Bargas, Toledo · 2025
 ha-alarma/
 ├── .github/
 │   └── workflows/
-│       └── build.yml              # Pipeline de compilación y release
+│       └── build.yml              # Compila el AAB firmado y lo sube a Play
 ├── android_res/
 │   ├── layout/
 │   │   ├── alarm_widget.xml       # Layout widget 2×2
@@ -58,7 +58,6 @@ ha-alarma/
 │       ├── history_screen.dart    # Historial de estados
 │       └── about_screen.dart      # Acerca de
 ├── pubspec.yaml                   # Dependencias y versión
-├── version.json                   # Control de versión para auto-update
 └── README.md
 ```
 
@@ -74,7 +73,8 @@ Ve a tu repositorio → **Settings → Secrets and variables → Actions** y añ
 
 | Nombre | Descripción |
 |---|---|
-| `KEYSTORE_BASE64` | Keystore en Base64 |
+| `PLAY_SERVICE_ACCOUNT_JSON` | (Opcional) JSON de la cuenta de servicio de Google Play para subir solo cada versión |
+| `KEYSTORE_BASE64` | Keystore (clave de subida a Play) en Base64 |
 | `KEYSTORE_PASSWORD` | Contraseña del keystore |
 | `KEY_ALIAS` | Alias de la clave (`ha_alarm`) |
 | `KEY_PASSWORD` | Contraseña de la clave |
@@ -85,7 +85,7 @@ Ve a tu repositorio → **Settings → Secrets and variables → Actions** y añ
 | `FIREBASE_PROJECT_ID` | Project ID de Firebase |
 | `FIREBASE_STORAGE_BUCKET` | Storage bucket de Firebase |
 
-> ⚠️ El keystore define la identidad de la app. Si se pierde, habrá que desinstalar en todos los dispositivos.
+> ⚠️ El keystore es la clave de subida a Google Play. Si se pierde, se puede restablecer desde Play Console, pero guarda una copia.
 
 ### Proceso de compilación
 
@@ -94,10 +94,10 @@ Al hacer `push` a `main` el workflow:
 1. Genera la estructura Android con `flutter create`
 2. Parchea `AndroidManifest.xml` (permisos, label, widgets)
 3. Inyecta las opciones de Firebase desde secrets
-4. Firma el APK con el keystore permanente
+4. Firma el paquete con la clave de subida (keystore)
 5. Genera el icono en todos los tamaños
-6. Compila el APK en modo release
-7. Crea automáticamente un **GitHub Release** con el APK
+6. Ejecuta las pruebas y compila el **AAB** en modo release
+7. Crea un **GitHub Release** con el AAB y, si existe `PLAY_SERVICE_ACCOUNT_JSON`, lo sube a la **prueba interna** de Google Play
 
 ---
 
@@ -112,7 +112,7 @@ Pulsa ⚙️ en cualquier momento para acceder a la configuración.
 | Entity ID de la alarma | ID de la entidad Alarmo | `alarm_control_panel.alarmo` |
 | Código de desarmado | PIN de desarmado | `1234` |
 | Timeout de conexión | Segundos antes de error | `5` |
-| URL de version.json | Para actualizaciones automáticas | `https://tu-servidor.es/version.json` |
+| Nombre de este móvil | Nombre con el que se registra su token push en HA | `alfredo` |
 | Tema | Claro / Oscuro / Sistema | Sistema |
 
 ---
@@ -123,7 +123,7 @@ La app incluye dos widgets para añadir al escritorio de Android:
 
 | Widget | Tamaño | Contenido |
 |---|---|---|
-| Alarma Casa | 2×2 | Icono de estado, texto del estado, hora de actualización |
+| Alarma Casa | 2×2 | Icono, estado, hora de actualización y botones Armar/Desarmar (con confirmación) |
 | Alarma Casa Wide | 2×1 | Tres líneas centradas: título, estado y hora |
 
 Para añadirlos: mantén pulsado en el escritorio → Widgets → busca "Alarma Casa".
@@ -136,7 +136,7 @@ El widget se actualiza automáticamente cada vez que la app refresca el estado.
 ### 1. Crear proyecto en Firebase
 
 1. Ve a [Firebase Console](https://console.firebase.google.com) y crea un proyecto
-2. Añade una app Android con el package name `com.homeassistant.ha_alarm`
+2. Añade una app Android con el package name `es.fernandezbadia.alarmacasa`
 3. Descarga el `google-services.json`
 
 ### 2. Configurar secrets de GitHub
@@ -184,17 +184,6 @@ automation:
 
 ---
 
-## Sistema de actualizaciones automáticas
-
-```json
-{
-  "version": "2026.11.1",
-  "url": "https://github.com/guaisess/ha-alarma/releases/download/v2026.11.1/app-release.apk"
-}
-```
-
----
-
 ## Estados de la alarma
 
 | Estado | Color | Descripción |
@@ -217,8 +206,6 @@ automation:
 | `shared_preferences` | ^2.2.2 | Configuración local |
 | `flutter_secure_storage` | ^9.2.2 | Token y código cifrados |
 | `package_info_plus` | ^8.0.0 | Versión instalada |
-| `dio` | ^5.4.0 | Descarga APK con progreso |
-| `open_file` | ^3.3.2 | Instalación del APK |
 | `path_provider` | ^2.1.2 | Ruta de almacenamiento |
 | `permission_handler` | ^11.3.0 | Permisos Android |
 | `firebase_core` | ^3.6.0 | Firebase base |
@@ -230,13 +217,12 @@ automation:
 
 ---
 
-## Instalación inicial
+## Instalación
 
-1. Descarga el APK del último release
-2. Copia el APK al móvil
-3. Ajustes → **Instalar apps de fuentes desconocidas** → activar
-4. Abre el APK e instala
-5. Configura la conexión
+1. Pide que te añadan como tester en la prueba interna de Google Play (con tu correo de Google)
+2. Abre el enlace de invitación e instala **Alarma Casa** desde Play Store
+3. Configura la conexión (URL `https://...`, token y entidad) y el nombre del móvil
+4. Las actualizaciones llegan solas desde Play
 
 ---
 
@@ -247,6 +233,16 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 ---
 
 ## 📋 Historial de versiones
+
+### v2026.11.12
+- 📦 Distribución por Google Play: nuevo identificador `es.fernandezbadia.alarmacasa` (hay que reinstalar y registrar la app en Firebase con ese paquete)
+- 🧹 Se elimina la auto-actualización por APK (permiso `REQUEST_INSTALL_PACKAGES`, `version.json`, `dio`, `open_file`, `permission_handler`); Play no la permite
+- 🛠️ CI: compila AAB con Flutter 3.50.1 (target Android 16 / API 36), firma con Gradle KTS y sube a prueba interna si hay credencial
+- ⬆️ Dependencias actualizadas a sus últimas versiones mayores (firebase, file_picker, flutter_local_notifications, flutter_secure_storage...)
+- 🔒 Sin copias de seguridad en la nube de Android (`allowBackup=false`)
+
+### v2026.11.11
+- 🧩 Widget 2×2: botones Armar y Desarmar. Abren la app con el diálogo de confirmación (nunca actúan solos; con el móvil bloqueado, Android pide desbloquear antes)
 
 ### v2026.11.10
 - 🔒 Seguridad: se quita `usesCleartextTraffic`; la app solo admite conexiones cifradas (HTTPS/WSS). La URL de HA debe empezar por `https://`

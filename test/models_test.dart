@@ -1,4 +1,4 @@
-// Versión 2026.11.8
+// Versión 2026.11.12
 // Pruebas de modelos: estados, zonas, configuración e historial (serialización)
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -71,9 +71,9 @@ void main() {
     });
 
     test('isValid exige url, token y entidad', () {
-      const base = Config(url: 'http://x', token: 't', entityId: 'e', code: '', updateUrl: '');
+      const base = Config(url: 'http://x', token: 't', entityId: 'e', code: '');
       expect(base.isValid, isTrue);
-      expect(const Config(url: '', token: 't', entityId: 'e', code: '', updateUrl: '').isValid, isFalse);
+      expect(const Config(url: '', token: 't', entityId: 'e', code: '').isValid, isFalse);
     });
   });
 

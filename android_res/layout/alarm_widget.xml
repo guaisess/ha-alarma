@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Versión 2026.11.11 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="12dp"
+    android:padding="10dp"
     android:background="#CC1e293b">
 
     <ImageView
         android:id="@+id/widget_icon"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
         android:src="@mipmap/ic_launcher"
         android:contentDescription="Estado" />
 
@@ -18,7 +19,7 @@
         android:id="@+id/widget_state"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="4dp"
         android:text="—"
         android:textSize="14sp"
         android:textStyle="bold"
@@ -34,5 +35,41 @@
         android:textSize="10sp"
         android:textColor="#94A3B8"
         android:gravity="center" />
+
+    <!-- Botones: abren la app con el diálogo de confirmación (nunca actúan solos) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/widget_btn_disarm"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginRight="4dp"
+            android:padding="5dp"
+            android:text="Desarmar"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#22c55e"
+            android:background="#3322c55e"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/widget_btn_arm"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginLeft="4dp"
+            android:padding="5dp"
+            android:text="Armar"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#ef4444"
+            android:background="#33ef4444"
+            android:gravity="center" />
+    </LinearLayout>
 
 </LinearLayout>

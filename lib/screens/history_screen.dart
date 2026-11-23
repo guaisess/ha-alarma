@@ -1,4 +1,4 @@
-// Versión 2026.11.4
+// Versión 2026.11.12
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../constants.dart';
@@ -121,13 +121,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         color: surfaceColor,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                            color: color.withOpacity(0.25), width: 1),
+                            color: color.withValues(alpha: 0.25), width: 1),
                       ),
                       child: Row(children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                              color: color.withOpacity(0.12),
+                              color: color.withValues(alpha: 0.12),
                               shape: BoxShape.circle),
                           child: Icon(icon, color: color, size: 20),
                         ),

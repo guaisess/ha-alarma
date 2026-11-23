@@ -1,4 +1,4 @@
-// Versión 2026.11.4
+// Versión 2026.11.12
 import 'package:flutter/material.dart';
 import 'constants.dart';
 import 'models.dart';
@@ -26,7 +26,7 @@ class CountdownBar extends StatelessWidget {
           data.state == AlarmState.arming
               ? 'Tiempo para armarse'
               : 'Tiempo para disparar',
-          style: TextStyle(color: color.withOpacity(0.8), fontSize: 12)),
+          style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 12)),
         Text(timeStr,
             style: TextStyle(
                 color: color,
@@ -39,7 +39,7 @@ class CountdownBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         child: LinearProgressIndicator(
           value: progress,
-          backgroundColor: color.withOpacity(0.15),
+          backgroundColor: color.withValues(alpha: 0.15),
           valueColor: AlwaysStoppedAnimation<Color>(color),
           minHeight: 8,
         ),
@@ -72,9 +72,9 @@ class OpenSensorsWarning extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: kRed.withOpacity(0.1),
+        color: kRed.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kRed.withOpacity(0.4)),
+        border: Border.all(color: kRed.withValues(alpha: 0.4)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Row(children: [
@@ -128,20 +128,20 @@ class ActionButton extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(vertical: 28),
         decoration: BoxDecoration(
-          color: active ? color.withOpacity(0.18) : bgColor,
+          color: active ? color.withValues(alpha: 0.18) : bgColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-              color: active ? color : color.withOpacity(0.4),
+              color: active ? color : color.withValues(alpha: 0.4),
               width: active ? 2 : 1.5),
           boxShadow: active
               ? [BoxShadow(
-                  color: color.withOpacity(0.25),
+                  color: color.withValues(alpha: 0.25),
                   blurRadius: 18,
                   spreadRadius: 1)]
               : [],
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: active ? color : color.withOpacity(0.65), size: 38),
+          Icon(icon, color: active ? color : color.withValues(alpha: 0.65), size: 38),
           const SizedBox(height: 10),
           Text(label,
               style: TextStyle(
@@ -212,10 +212,10 @@ class ThemeOption extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? kBlue.withOpacity(0.15) : Colors.transparent,
+            color: selected ? kBlue.withValues(alpha: 0.15) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: selected ? kBlue : kSubtext.withOpacity(0.3),
+                color: selected ? kBlue : kSubtext.withValues(alpha: 0.3),
                 width: selected ? 1.5 : 1),
           ),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -302,7 +302,7 @@ class InputField extends StatelessWidget {
         labelText: label,
         labelStyle: TextStyle(color: subtextColor, fontSize: 13),
         hintText: hint,
-        hintStyle: TextStyle(color: subtextColor.withOpacity(0.45), fontSize: 12),
+        hintStyle: TextStyle(color: subtextColor.withValues(alpha: 0.45), fontSize: 12),
         prefixIcon: Icon(icon, color: subtextColor, size: 20),
         suffixIcon: onToggle != null
             ? IconButton(

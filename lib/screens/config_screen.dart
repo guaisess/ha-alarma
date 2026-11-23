@@ -1,6 +1,7 @@
+// Versión 2026.11.12
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// Versión 2026.11.7
+// Versión 2026.11.12
 import 'package:file_picker/file_picker.dart';
 import '../constants.dart';
 import '../models.dart';
@@ -19,7 +20,6 @@ class _ConfigScreenState extends State<ConfigScreen> {
   final _tokenCtrl     = TextEditingController();
   final _entityCtrl    = TextEditingController();
   final _codeCtrl      = TextEditingController();
-  final _updateUrlCtrl = TextEditingController();
   final _timeoutCtrl   = TextEditingController();
   final _deviceCtrl    = TextEditingController();
 
@@ -38,7 +38,6 @@ class _ConfigScreenState extends State<ConfigScreen> {
         _tokenCtrl.text     = c.token;
         _entityCtrl.text    = c.entityId;
         _codeCtrl.text      = c.code;
-        _updateUrlCtrl.text = c.updateUrl;
         _timeoutCtrl.text   = c.timeoutSeconds.toString();
         _deviceCtrl.text    = c.deviceName;
       });
@@ -56,7 +55,6 @@ class _ConfigScreenState extends State<ConfigScreen> {
     token:          _tokenCtrl.text.trim(),
     entityId:       _entityCtrl.text.trim(),
     code:           _codeCtrl.text.trim(),
-    updateUrl:      _updateUrlCtrl.text.trim(),
     timeoutSeconds: int.tryParse(_timeoutCtrl.text.trim()) ?? kTimeoutSeconds,
     showArmModes:   _showArmModes,
     deviceName:     Config.cleanDeviceName(_deviceCtrl.text),
@@ -114,14 +112,14 @@ class _ConfigScreenState extends State<ConfigScreen> {
 
   Future<void> _importBackup() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final files = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
         dialogTitle: 'Seleccionar backup',
         initialDirectory: kBackupDir,
       );
 
-      if (result == null || result.files.isEmpty) {
+      if (files.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -133,7 +131,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
         return;
       }
 
-      final filePath = result.files.single.path;
+      final filePath = files.single.path;
       if (filePath == null) return;
 
       // Mostrar diálogo de confirmación
@@ -227,7 +225,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   void dispose() {
     _urlCtrl.dispose(); _tokenCtrl.dispose();
     _entityCtrl.dispose(); _codeCtrl.dispose();
-    _updateUrlCtrl.dispose(); _timeoutCtrl.dispose();
+    _timeoutCtrl.dispose();
     super.dispose();
   }
 
@@ -356,7 +354,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   Switch(
                     value: _showArmModes,
                     onChanged: (v) => setState(() => _showArmModes = v),
-                    activeColor: kBlue,
+                    activeThumbColor: kBlue,
                   ),
                 ]),
               ),
@@ -364,42 +362,6 @@ class _ConfigScreenState extends State<ConfigScreen> {
           ),
 
           const SizedBox(height: 20),
-
-          // ── Actualizaciones ──
-          SectionCard(
-            title: '🔄 Actualizaciones',
-            surfaceColor: surfaceColor,
-            textColor: textColor,
-            children: [
-              InputField(
-                ctrl: _updateUrlCtrl,
-                label: 'URL del fichero version.json',
-                hint: 'https://tu-servidor.es/ha_alarm/version.json',
-                icon: Icons.cloud_download_rounded,
-                fieldBg: fieldBg, subtextColor: subtextColor, textColor: textColor,
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                    color: const Color(0xFF1e3a5f),
-                    borderRadius: BorderRadius.circular(12)),
-                child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Formato del version.json:',
-                      style: TextStyle(
-                          color: Color(0xFF60a5fa),
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold)),
-                  SizedBox(height: 6),
-                  Text('{\n  "version": "1.0.2",\n  "url": "https://.../app.apk"\n}',
-                      style: TextStyle(
-                          color: Color(0xFF93c5fd),
-                          fontSize: 11,
-                          fontFamily: 'monospace')),
-                ]),
-              ),
-            ],
-          ),
 
           const SizedBox(height: 16),
 
@@ -447,13 +409,13 @@ class _ConfigScreenState extends State<ConfigScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: _testResult!.startsWith('✅')
-                    ? kGreen.withOpacity(0.1)
-                    : kRed.withOpacity(0.1),
+                    ? kGreen.withValues(alpha: 0.1)
+                    : kRed.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                     color: _testResult!.startsWith('✅')
-                        ? kGreen.withOpacity(0.4)
-                        : kRed.withOpacity(0.4)),
+                        ? kGreen.withValues(alpha: 0.4)
+                        : kRed.withValues(alpha: 0.4)),
               ),
               child: Text(_testResult!,
                   style: TextStyle(
@@ -478,7 +440,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                     icon: const Icon(Icons.download_rounded),
                     label: const Text('Exportar'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: kBlue.withOpacity(0.2),
+                      backgroundColor: kBlue.withValues(alpha: 0.2),
                       foregroundColor: kBlue,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -493,7 +455,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                     icon: const Icon(Icons.upload_rounded),
                     label: const Text('Importar'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: kGreen.withOpacity(0.2),
+                      backgroundColor: kGreen.withValues(alpha: 0.2),
                       foregroundColor: kGreen,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),

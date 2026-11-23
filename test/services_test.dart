@@ -1,4 +1,4 @@
-// Versión 2026.11.8
+// Versión 2026.11.12
 // Pruebas de servicios: parseo de estados de HA, sensores y comparación de versiones
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ha_alarm/models.dart';
@@ -37,16 +37,4 @@ void main() {
     });
   });
 
-  group('UpdateService.isNewer', () {
-    test('el esquema AAAA.MM.V es posterior al antiguo 1.x', () {
-      expect(UpdateService.isNewer('2026.11.1', '1.5.1'), isTrue);
-    });
-
-    test('compara versión a versión', () {
-      expect(UpdateService.isNewer('2026.11.7', '2026.11.6'), isTrue);
-      expect(UpdateService.isNewer('2026.12.1', '2026.11.9'), isTrue);
-      expect(UpdateService.isNewer('2026.11.6', '2026.11.6'), isFalse);
-      expect(UpdateService.isNewer('2026.11.5', '2026.11.6'), isFalse);
-    });
-  });
 }

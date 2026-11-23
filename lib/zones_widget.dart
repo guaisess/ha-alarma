@@ -1,4 +1,4 @@
-// Versión 2026.11.6
+// Versión 2026.11.12
 import 'package:flutter/material.dart';
 import 'constants.dart';
 import 'models.dart';
@@ -50,7 +50,7 @@ class ZonesSection extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 4),
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       decoration: BoxDecoration(
-        color: highlight == z.def.label ? kBlue.withOpacity(0.15) : Colors.transparent,
+        color: highlight == z.def.label ? kBlue.withValues(alpha: 0.15) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
             color: highlight == z.def.label ? kBlue : Colors.transparent, width: 1.5),

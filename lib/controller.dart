@@ -1,4 +1,4 @@
-// Versión 2026.11.7
+// Versión 2026.11.12
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'constants.dart';
@@ -137,7 +137,6 @@ class AlarmController extends ChangeNotifier {
       _loading = false;
       notifyListeners();
     }
-    if (_config!.updateUrl.isNotEmpty) _checkUpdate();
     FcmRegistrationService.sync();
   }
 
@@ -314,28 +313,6 @@ class AlarmController extends ChangeNotifier {
       _pollTimer?.cancel();
     }
   }
-
-  /// Comprueba si hay versión nueva (arranque y al volver a la app)
-  Future<void> checkUpdate() async {
-    if (_config == null || _config!.updateUrl.isEmpty) return;
-    await _checkUpdate();
-  }
-
-  Future<void> _checkUpdate() async {
-    try {
-      final info = await UpdateService.check(_config!.updateUrl);
-      if (info != null) {
-        _pendingUpdate = info;
-        notifyListeners(); // para que la pantalla muestre el aviso ya
-      }
-    } catch (e) {
-      debugPrint('[Controller] Update check error: $e');
-    }
-  }
-
-  UpdateInfo? _pendingUpdate;
-  UpdateInfo? get pendingUpdate => _pendingUpdate;
-  void clearPendingUpdate() => _pendingUpdate = null;
 
   String lastFetchLabel() {
     if (_lastFetch == null) return '';

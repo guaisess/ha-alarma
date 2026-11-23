@@ -1,3 +1,4 @@
+// Versión 2026.11.12
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -5,17 +6,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:dio/dio.dart';
-import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:vibration/vibration.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'constants.dart';
 import 'models.dart';
 
-// Versión 2026.11.8
+// Versión 2026.11.12
 // ─── Parseo común de un objeto "state" de HA (REST y WebSocket) ───
 AlarmStateData parseStateData(Map<String, dynamic> data) {
   final attrs = data['attributes'] as Map<String, dynamic>? ?? {};
@@ -348,71 +345,6 @@ class FeedbackService {
   }
 }
 
-// ─── Servicio de actualización ────────────────────────────────
-class UpdateInfo {
-  final String version, apkUrl;
-  UpdateInfo({required this.version, required this.apkUrl});
-}
-
-class UpdateService {
-  static DateTime? _ultimaComprobacion; // última lectura correcta de version.json
-
-  static bool isNewer(String remote, String current) {
-    List<int> parse(String v) =>
-        v.split('.').map((e) => int.tryParse(e) ?? 0).toList();
-    final r = parse(remote);
-    final c = parse(current);
-    for (int i = 0; i < 3; i++) {
-      final rv = i < r.length ? r[i] : 0;
-      final cv = i < c.length ? c[i] : 0;
-      if (rv > cv) return true;
-      if (rv < cv) return false;
-    }
-    return false;
-  }
-
-  static Future<UpdateInfo?> check(String url) async {
-    final ult = _ultimaComprobacion;
-    if (ult != null &&
-        DateTime.now().difference(ult).inMinutes < kUpdateCheckIntervalMinutes) {
-      return null;
-    }
-    try {
-      final res = await http
-          .get(Uri.parse(url))
-          .timeout(const Duration(seconds: kUpdateCheckTimeoutSeconds));
-      if (res.statusCode != 200) return null;
-      _ultimaComprobacion = DateTime.now(); // solo si se leyó bien; si falla, se reintenta
-      final data          = jsonDecode(res.body);
-      final remoteVersion = data['version'] as String;
-      final apkUrl        = data['url'] as String;
-      final info          = await PackageInfo.fromPlatform();
-      final prefs         = await SharedPreferences.getInstance();
-      if (prefs.getString('last_update_notified') == remoteVersion) return null;
-      if (isNewer(remoteVersion, info.version)) {
-        return UpdateInfo(version: remoteVersion, apkUrl: apkUrl);
-      }
-    } catch (e) {
-      debugPrint('[Update] Check failed: $e');
-    }
-    return null;
-  }
-
-  static Future<void> downloadAndInstall(
-      String url, void Function(double) onProgress) async {
-    if (Platform.isAndroid) {
-      final status = await Permission.requestInstallPackages.request();
-      if (!status.isGranted) throw Exception('Permiso de instalación denegado');
-    }
-    final dir  = await getExternalStorageDirectory();
-    final path = '${dir!.path}/ha_alarm_update.apk';
-    await Dio().download(url, path, onReceiveProgress: (recv, total) {
-      if (total > 0) onProgress(recv / total);
-    });
-    await OpenFile.open(path);
-  }
-}
-
 // ─── Servicio de Backup/Restore ───────────────────────────────
 class BackupService {
   static String _generateFilename() {
@@ -434,7 +366,6 @@ class BackupService {
         'token':     await secure.read(key: 'ha_token') ?? prefs.getString('ha_token') ?? '',
         'entity':    prefs.getString('ha_entity')    ?? '',
         'code':      await secure.read(key: 'ha_code') ?? prefs.getString('ha_code') ?? '',
-        'updateUrl': prefs.getString('ha_updateUrl') ?? '',
         'timeout':   prefs.getInt('ha_timeout')      ?? kTimeoutSeconds,
         'showArmModes': prefs.getBool('show_arm_modes') ?? false,
         'deviceName':   prefs.getString('device_name') ?? '',
@@ -462,7 +393,6 @@ class BackupService {
       if (config['token'] != null) await secure.write(key: 'ha_token', value: config['token'].toString());
       if (config['entity'] != null) await prefs.setString('ha_entity', config['entity'].toString());
       if (config['code'] != null) await secure.write(key: 'ha_code', value: config['code'].toString());
-      if (config['updateUrl'] != null) await prefs.setString('ha_updateUrl', config['updateUrl'].toString());
       if (config['timeout'] != null) await prefs.setInt('ha_timeout', (config['timeout'] as num).toInt());
       if (config['deviceName'] is String) await prefs.setString('device_name', config['deviceName']);
       if (config['showArmModes'] is bool) await prefs.setBool('show_arm_modes', config['showArmModes']);
@@ -525,7 +455,7 @@ class BackupService {
 
 // ─── Servicio de Widget Android ───────────────────────────────
 class WidgetService {
-  static const _channel = MethodChannel('com.homeassistant.ha_alarm/widget');
+  static const _channel = MethodChannel('es.fernandezbadia.alarmacasa/widget');
 
   static const _labels = {
     AlarmState.disarmed:   'Desarmada',
@@ -538,6 +468,24 @@ class WidgetService {
     AlarmState.triggered:  '¡ALARMA!',
     AlarmState.unknown:    'Sin conexión',
   };
+
+  /// Acción pedida desde los botones del widget ('arm' / 'disarm') con la app
+  /// cerrada; devuelve null si no hay ninguna.
+  static Future<String?> launchAction() async {
+    try {
+      return await _channel.invokeMethod<String>('getLaunchAction');
+    } catch (e) {
+      debugPrint('[Widget] launchAction error: $e');
+      return null;
+    }
+  }
+
+  /// Escucha las acciones del widget con la app ya abierta.
+  static void listenActions(void Function(String action) onAction) {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'widgetAction') onAction(call.arguments as String);
+    });
+  }
 
   static Future<void> update(AlarmState state, {String zones = ''}) async {
     try {

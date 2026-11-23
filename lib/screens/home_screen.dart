@@ -1,4 +1,4 @@
-// Versión 2026.11.7
+// Versión 2026.11.12
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -29,7 +29,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String? _zonaPendiente;          // zona pedida por una notificación, aún sin mostrar
   String? _zonaResaltada;
   Timer?  _timerResalte;
-  bool _updateDialogOpen = false; // evita abrir un segundo aviso mientras hay uno
 
   @override
   void initState() {
@@ -37,8 +36,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _controller.addListener(_onChanged);
     PushNav.zona.addListener(_onPushZona);
+    WidgetService.listenActions(_onWidgetAction);
+    WidgetService.launchAction().then(_onWidgetAction); // app abierta desde el widget
     _controller.init();
     _initNotifications();
+  }
+
+  /// Botón del widget: se guarda y se ejecuta en cuanto la config está cargada
+  String? _accionWidget;
+
+  void _onWidgetAction(String? action) {
+    if (action == null) return;
+    _accionWidget = action;
+    _ejecutarAccionWidget();
+  }
+
+  /// Pide siempre confirmación antes de actuar; no hace nada hasta que haya config válida
+  void _ejecutarAccionWidget() {
+    final action = _accionWidget;
+    if (action == null || !(_controller.config?.isValid ?? false)) return;
+    _accionWidget = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).popUntil((r) => r.isFirst);
+      if (action == 'arm') {
+        _confirm('arm', 'Armar', kRed, Icons.lock_rounded, warning: _robotWarning());
+      } else if (action == 'disarm') {
+        _confirm('disarm', 'Desarmar', kGreen, Icons.lock_open_rounded);
+      }
+    });
   }
 
   /// Una notificación con zona fue tocada: volver a la principal y enfocarla
@@ -71,18 +97,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _onChanged() {
     if (mounted) setState(() {});
     _intentarEnfocar();
-    final upd = _controller.pendingUpdate;
-    if (upd != null && mounted) {
-      _controller.clearPendingUpdate();
-      if (!_updateDialogOpen) _showUpdateDialog(upd);
-    }
+    _ejecutarAccionWidget();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       Future.delayed(const Duration(milliseconds: 800), _controller.refresh);
-      _controller.checkUpdate();
     }
   }
 
@@ -114,10 +135,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         final n = message.notification;
         if (n == null) return;
         flutterLocalNotificationsPlugin.show(
-          message.hashCode,
-          n.title ?? 'Alarma Casa HA',
-          n.body,
-          const NotificationDetails(
+          id: message.hashCode,
+          title: n.title ?? 'Alarma Casa HA',
+          body: n.body,
+          notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
               kNotifChannelId, kNotifChannelName,
               channelDescription: 'Notificaciones de estado de la alarma',
@@ -132,91 +153,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('[Home] Notification init error: $e');
     }
-  }
-
-  void _showUpdateDialog(UpdateInfo info) {
-    double  progress   = 0;
-    bool    downloading = false;
-    String? dlError;
-    _updateDialogOpen = true;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => Dialog(
-          backgroundColor: kSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.system_update_rounded, color: kBlue, size: 44),
-              const SizedBox(height: 14),
-              const Text('Actualización disponible',
-                  style: TextStyle(color: kText, fontWeight: FontWeight.bold, fontSize: 17)),
-              const SizedBox(height: 8),
-              Text('Versión ${info.version}',
-                  style: const TextStyle(color: kSubtext, fontSize: 14)),
-              const SizedBox(height: 20),
-              if (downloading) ...[
-                LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: kBg,
-                    color: kBlue,
-                    borderRadius: BorderRadius.circular(4)),
-                const SizedBox(height: 8),
-                Text('${(progress * 100).toInt()}%',
-                    style: const TextStyle(color: kSubtext, fontSize: 13)),
-              ],
-              if (dlError != null)
-                Text(dlError!, style: const TextStyle(color: kRed, fontSize: 12)),
-              const SizedBox(height: 20),
-              Row(children: [
-                Expanded(child: OutlinedButton(
-                  onPressed: downloading ? null : () async {
-                    // Solo se silencia la versión si el usuario la descarta sin error previo
-                    if (dlError == null) {
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setString('last_update_notified', info.version);
-                    }
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  },
-                  style: OutlinedButton.styleFrom(
-                      foregroundColor: kSubtext,
-                      side: const BorderSide(color: kSubtext),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12))),
-                  child: const Text('Ahora no'),
-                )),
-                const SizedBox(width: 14),
-                Expanded(child: ElevatedButton(
-                  onPressed: downloading ? null : () async {
-                    setS(() { downloading = true; dlError = null; });
-                    try {
-                      // No se marca como "vista": si falla, se ofrece de nuevo
-                      await UpdateService.downloadAndInstall(
-                          info.apkUrl, (p) => setS(() => progress = p));
-                      if (ctx.mounted) Navigator.pop(ctx);
-                    } catch (e) {
-                      setS(() { downloading = false; dlError = 'Error: $e'; });
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: kBlue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      elevation: 0),
-                  child: const Text('Actualizar',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                )),
-              ]),
-            ]),
-          ),
-        ),
-      ),
-    ).whenComplete(() => _updateDialogOpen = false);
   }
 
   Future<void> _goConfig() async {
@@ -278,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                  color: color.withOpacity(0.15), shape: BoxShape.circle),
+                  color: color.withValues(alpha: 0.15), shape: BoxShape.circle),
               child: Icon(icon, color: color, size: 40)),
             const SizedBox(height: 18),
             const Text('¿Confirmar acción?',
@@ -319,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   });
                 },
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: color.withOpacity(0.2),
+                    backgroundColor: color.withValues(alpha: 0.2),
                     foregroundColor: color,
                     side: BorderSide(color: color),
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -402,12 +338,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         padding: const EdgeInsets.symmetric(
                             vertical: 28, horizontal: 20),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.08),
+                          color: color.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                              color: color.withOpacity(0.35), width: 1.5),
+                              color: color.withValues(alpha: 0.35), width: 1.5),
                           boxShadow: [BoxShadow(
-                              color: color.withOpacity(0.12), blurRadius: 20)],
+                              color: color.withValues(alpha: 0.12), blurRadius: 20)],
                         ),
                         child: Column(children: [
                           Icon(icon, color: color, size: 52),
@@ -557,9 +493,9 @@ class _ArmModeChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.3), width: 1),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
         ),
         child: Column(children: [
           Icon(icon, color: color, size: 22),

@@ -1,4 +1,4 @@
-// Versión 2026.11.7
+// Versión 2026.11.12
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -114,7 +114,7 @@ ThemeMode toFlutterThemeMode(AppThemeMode m) {
 
 // ─── Config ───────────────────────────────────────────────────
 class Config {
-  final String url, token, entityId, code, updateUrl;
+  final String url, token, entityId, code;
   final String deviceName; // nombre con el que se registra el token FCM en HA
   final int    timeoutSeconds;
   final bool   showArmModes;
@@ -124,7 +124,6 @@ class Config {
     required this.token,
     required this.entityId,
     required this.code,
-    required this.updateUrl,
     this.timeoutSeconds = kTimeoutSeconds,
     this.showArmModes   = false,
     this.deviceName     = '',
@@ -155,7 +154,6 @@ class Config {
       token:          token,
       entityId:       p.getString('ha_entity')    ?? '',
       code:           code,
-      updateUrl:      p.getString('ha_updateUrl') ?? '',
       timeoutSeconds: p.getInt('ha_timeout')      ?? kTimeoutSeconds,
       showArmModes:   p.getBool('show_arm_modes') ?? false,
       deviceName:     p.getString('device_name')  ?? '',
@@ -166,7 +164,7 @@ class Config {
     final p = await SharedPreferences.getInstance();
     await p.setString('ha_url',       url);
     await p.setString('ha_entity',    entityId);
-    await p.setString('ha_updateUrl', updateUrl);
+    await p.remove('ha_updateUrl'); // ajuste antiguo de la auto-actualización
     await p.setInt('ha_timeout',      timeoutSeconds);
     await p.setBool('show_arm_modes', showArmModes);
     await p.setString('device_name',  deviceName);

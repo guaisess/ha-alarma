@@ -4,3 +4,5 @@ build/
 .flutter-plugins
 .flutter-plugins-dependencies
 pubspec.lock
+# Restos de sincronización de OneDrive sobre ficheros generados
+*[conflicted*

@@ -1,5 +1,5 @@
-// Versión 2026.11.4
-package com.homeassistant.ha_alarm
+// Versión 2026.11.12
+package es.fernandezbadia.alarmacasa
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -40,6 +40,21 @@ private fun infoText(prefs: SharedPreferences, sep: String): String {
         .joinToString(sep)
 }
 
+// Abre la app con una acción para que muestre el diálogo de confirmación.
+// El widget nunca arma ni desarma por sí solo.
+private fun accionIntent(context: Context, accion: String, codigo: Int): PendingIntent {
+    val intent = Intent(context, MainActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                Intent.FLAG_ACTIVITY_SINGLE_TOP
+        putExtra("widget_action", accion)
+    }
+    return PendingIntent.getActivity(
+        context, codigo, intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+}
+
 private fun launchIntent(context: Context): PendingIntent? {
     val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
         ?: return null
@@ -71,6 +86,8 @@ class AlarmWidget : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_time, infoText(prefs, "\n"))
                 views.setTextColor(R.id.widget_state, color)
                 if (pending != null) views.setOnClickPendingIntent(R.id.widget_state, pending)
+                views.setOnClickPendingIntent(R.id.widget_btn_arm, accionIntent(context, "arm", 1))
+                views.setOnClickPendingIntent(R.id.widget_btn_disarm, accionIntent(context, "disarm", 2))
                 appWidgetManager.updateAppWidget(id, views)
             }
         } catch (e: Exception) {

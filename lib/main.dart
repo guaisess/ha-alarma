@@ -1,4 +1,4 @@
-// Versión 2026.11.6
+// Versión 2026.11.12
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -33,7 +33,7 @@ void main() async {
 
   const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
   await _localNotifications.initialize(
-    const InitializationSettings(android: androidSettings),
+    settings: const InitializationSettings(android: androidSettings),
     // Tocar una notificación local (app en primer plano) abre su zona
     onDidReceiveNotificationResponse: (r) => PushNav.abrir(r.payload),
   );
