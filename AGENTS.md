@@ -35,7 +35,7 @@
 ## Android specifics
 - Native widgets: 2×2 (`AlarmWidget`) and 2×1 (`AlarmWidgetWide`) in `android_res/`
 - Communication: `MethodChannel('es.fernandezbadia.alarmacasa/widget')` + `FlutterSharedPreferences`
-- CI-only build: GitHub Actions workflow in `.github/workflows/build.yml` (Flutter 3.50.1, Java 17); compila un AAB para Google Play (paquete `es.fernandezbadia.alarmacasa`)
+- CI-only build: GitHub Actions workflow in `.github/workflows/build.yml` (Flutter 3.50.1, Java 21); compila un AAB para Google Play (paquete `es.fernandezbadia.alarmacasa`)
 
 ## UI conventions
 - All UI in Spanish (`es_ES` locale)

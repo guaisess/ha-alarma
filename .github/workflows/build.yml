@@ -1,4 +1,4 @@
-# Versión 2026.11.13
+# Versión 2026.11.14
 # Compila la app como paquete AAB firmado para Google Play (ya no se publica APK suelto).
 name: Build AAB (Google Play)
 
@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'  # el lint de AGP 9 usa APIs de Java 21
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2

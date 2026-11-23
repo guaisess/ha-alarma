@@ -234,6 +234,9 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v2026.11.14
+- 🛠️ CI: Java 21 (el lint de AGP 9 fallaba con Java 17 en `firebase_core`)
+
 ### v2026.11.13
 - 🛠️ CI: compileSdk 37 y desugaring de bibliotecas Java (exigidos por flutter_local_notifications y androidx.core 1.19)
 
