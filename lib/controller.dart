@@ -1,4 +1,4 @@
-// Versión 2026.11.3
+// Versión 2026.11.4
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'constants.dart';
@@ -52,6 +52,36 @@ class AlarmController extends ChangeNotifier {
 
   /// Nombres legibles de sensores ya consultados
   Map<String, String> get sensorNames => _sensorNames;
+
+  /// Anota en el historial los cambios de estado de una zona. Ignora la
+  /// primera lectura (sin estado previo) para no llenarlo de ruido.
+  void _registrarZona(String id, Map<String, dynamic>? antes, Map<String, dynamic> ahora) {
+    final nuevo = ahora['state'] as String?;
+    if (antes == null || nuevo == null || antes['state'] == nuevo) return;
+    for (final d in kZones) {
+      if (d.entityId == id) {
+        HistoryService.add(parseState(nuevo), zone: d.label,
+            robot: d.autoFlagEntity != null && _zoneRaw[d.autoFlagEntity]?['state'] == 'on');
+      } else if (d.autoFlagEntity == id && nuevo == 'on') {
+        HistoryService.markRobot(d.label);
+      }
+    }
+  }
+
+  /// Resumen para el widget: solo zonas que difieren de la maestra
+  String _zonesSummary() {
+    final master = _stateData?.state;
+    return zones
+        .where((z) => z.state != master && z.state != AlarmState.unknown)
+        .map((z) => '${z.autoDisarmed ? '🤖 ' : ''}${z.def.short} '
+            '${(stateInfo[z.state]!['label'] as String).toLowerCase()}')
+        .join(' · ');
+  }
+
+  void _pushWidget() {
+    final s = _stateData?.state;
+    if (s != null) WidgetService.update(s, zones: _zonesSummary());
+  }
 
   /// Consulta una sola vez el nombre de los sensores abiertos/anulados nuevos
   Future<void> _loadSensorNames() async {
@@ -125,8 +155,11 @@ class AlarmController extends ChangeNotifier {
       _onWsState(parseStateData(s));
       return;
     }
+    final antes = _zoneRaw[id];
     _zoneRaw = {..._zoneRaw, id: s};
+    _registrarZona(id, antes, s);
     notifyListeners();
+    _pushWidget();
     _loadSensorNames();
   }
 
@@ -138,8 +171,13 @@ class AlarmController extends ChangeNotifier {
 
   Future<void> _refreshZones() async {
     if (_config == null || !_config!.isValid) return;
+    final antes = _zoneRaw;
     _zoneRaw = await HaService(_config!).getZoneStates();
+    for (final e in _zoneRaw.entries) {
+      _registrarZona(e.key, antes[e.key], e.value);
+    }
     notifyListeners();
+    _pushWidget();
     _loadSensorNames();
   }
 
@@ -169,7 +207,7 @@ class AlarmController extends ChangeNotifier {
     _lastFetch = DateTime.now();
     _error = null;
     _updateCountdownTimer(data);
-    WidgetService.update(data.state);
+    _pushWidget();
     StateCache.save(data);
     notifyListeners();
     _loadSensorNames();
@@ -202,7 +240,7 @@ class AlarmController extends ChangeNotifier {
           _loading   = false;
           _error     = null;
           _updateCountdownTimer(data);
-          WidgetService.update(data.state);
+          _pushWidget();
           StateCache.save(data);
           notifyListeners();
           _refreshZones();

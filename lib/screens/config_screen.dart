@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// Versión 2026.11.3
+// Versión 2026.11.4
 import 'package:file_picker/file_picker.dart';
 import '../constants.dart';
 import '../models.dart';

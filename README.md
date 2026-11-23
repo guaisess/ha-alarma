@@ -248,6 +248,10 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v2026.11.4
+- 🕘 Historial: registra también los cambios de cada zona; marca con 🤖 los desarmes hechos por los robots (hasta 100 entradas)
+- 🧩 Widget: muestra las zonas cuyo estado difiere del maestro (p. ej. "🤖 PB desarmada")
+
 ### v2026.11.3
 - 🔄 Actualización: un error de descarga ya no marca la versión como vista; se vuelve a ofrecer. Tampoco se bloquea si falló la lectura de `version.json`
 - 🛠️ CI: `version.json` solo se actualiza cuando el release está publicado (evita el 404 al descargar el APK)

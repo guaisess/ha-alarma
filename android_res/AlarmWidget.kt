@@ -1,4 +1,4 @@
-// Versión 2026.11.3
+// Versión 2026.11.4
 package com.homeassistant.ha_alarm
 
 import android.appwidget.AppWidgetManager
@@ -31,6 +31,15 @@ private fun colorForState(key: String): Int = when (key) {
     else         -> android.graphics.Color.parseColor("#94a3b8")
 }
 
+// Texto inferior: hora de actualización y resumen de zonas que difieren de la maestra
+private fun infoText(prefs: SharedPreferences, sep: String): String {
+    val updatedAt = prefs.getString("flutter.widget_updated_at", "") ?: ""
+    val zones     = prefs.getString("flutter.widget_zones", "") ?: ""
+    return listOf(if (updatedAt.isNotEmpty()) "Act: $updatedAt" else "", zones)
+        .filter { it.isNotEmpty() }
+        .joinToString(sep)
+}
+
 private fun launchIntent(context: Context): PendingIntent? {
     val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
         ?: return null
@@ -59,8 +68,7 @@ class AlarmWidget : AppWidgetProvider() {
             for (id in appWidgetIds) {
                 val views = RemoteViews(context.packageName, R.layout.alarm_widget)
                 views.setTextViewText(R.id.widget_state, stateLabel)
-                views.setTextViewText(R.id.widget_time,
-                    if (updatedAt.isNotEmpty()) "Act: $updatedAt" else "")
+                views.setTextViewText(R.id.widget_time, infoText(prefs, "\n"))
                 views.setTextColor(R.id.widget_state, color)
                 if (pending != null) views.setOnClickPendingIntent(R.id.widget_state, pending)
                 appWidgetManager.updateAppWidget(id, views)
@@ -103,8 +111,7 @@ class AlarmWidgetWide : AppWidgetProvider() {
                 val views = RemoteViews(context.packageName, R.layout.alarm_widget_wide)
                 views.setTextViewText(R.id.widget_wide_title, "Alarma Casa")
                 views.setTextViewText(R.id.widget_wide_state, stateLabel)
-                views.setTextViewText(R.id.widget_wide_time,
-                    if (updatedAt.isNotEmpty()) "Act: $updatedAt" else "")
+                views.setTextViewText(R.id.widget_wide_time, infoText(prefs, " · "))
                 views.setTextColor(R.id.widget_wide_state, color)
                 if (pending != null) {
                     views.setOnClickPendingIntent(R.id.widget_wide_title, pending)

@@ -1,3 +1,4 @@
+// Versión 2026.11.4
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../constants.dart';
@@ -134,7 +135,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         Expanded(child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(label,
+                            Text('${e.zone != null ? '${e.zone} · ' : ''}$label${e.robot ? '  🤖' : ''}',
                                 style: TextStyle(
                                     color: color,
                                     fontWeight: FontWeight.bold,

@@ -1,4 +1,4 @@
-// Versión 2026.11.3
+// Versión 2026.11.4
 import 'package:flutter/material.dart';
 import 'constants.dart';
 import 'models.dart';

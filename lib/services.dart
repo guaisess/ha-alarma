@@ -15,7 +15,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'constants.dart';
 import 'models.dart';
 
-// Versión 2026.11.3
+// Versión 2026.11.4
 // ─── Parseo común de un objeto "state" de HA (REST y WebSocket) ───
 AlarmStateData parseStateData(Map<String, dynamic> data) {
   final attrs = data['attributes'] as Map<String, dynamic>? ?? {};
@@ -499,7 +499,7 @@ class WidgetService {
     AlarmState.unknown:    'Sin conexión',
   };
 
-  static Future<void> update(AlarmState state) async {
+  static Future<void> update(AlarmState state, {String zones = ''}) async {
     try {
       final now  = DateTime.now();
       final hora = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
@@ -508,6 +508,7 @@ class WidgetService {
       await prefs.setString('widget_state_label', _labels[state] ?? '—');
       await prefs.setString('widget_state_key',   state.name);
       await prefs.setString('widget_updated_at',  hora);
+      await prefs.setString('widget_zones',       zones);
 
       try {
         await _channel.invokeMethod('updateWidget');
