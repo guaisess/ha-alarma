@@ -1,4 +1,4 @@
-// Versión 2026.11.1
+// Versión 2026.11.2
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -8,6 +8,7 @@ import '../models.dart';
 import '../services.dart';
 import '../controller.dart';
 import '../widgets.dart';
+import '../zones_widget.dart';
 import 'config_screen.dart';
 import 'history_screen.dart';
 import 'about_screen.dart';
@@ -174,7 +175,47 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (changed == true) await _controller.reloadConfig();
   }
 
-  void _confirm(String action, String label, Color color, IconData icon) {
+  /// Confirmación para armar una zona que el robot dejó desarmada
+  void _confirmZone(ZoneData z) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: kSurface,
+        title: Text('Armar ${z.def.label}',
+            style: const TextStyle(color: kText)),
+        content: const Text(
+            'La zona la desarmó la automatización del robot. '
+            'Arma solo si el robot ya no está limpiando.',
+            style: TextStyle(color: kSubtext)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _controller.armZone(z.def).catchError((e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('❌ No se pudo armar la zona'),
+                      backgroundColor: kRed));
+                }
+              });
+            },
+            child: const Text('Armar', style: TextStyle(color: kRed)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Aviso si hay zonas desarmadas por robots (el armado completo puede quedarse en "Armando")
+  String? _robotWarning() {
+    final rz = _controller.robotZones;
+    if (rz.isEmpty) return null;
+    return '🤖 Desarmada por robot: ${rz.map((z) => z.def.label).join(', ')}. '
+           'El armado completo puede quedarse en "Armando" hasta que termine la limpieza.';
+  }
+
+  void _confirm(String action, String label, Color color, IconData icon, {String? warning}) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -196,6 +237,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             Text('Se va a aplicar: $label',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: kSubtext, fontSize: 14)),
+            if (warning != null) ...[
+              const SizedBox(height: 12),
+              Text(warning,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: kOrange, fontSize: 12)),
+            ],
             const SizedBox(height: 28),
             Row(children: [
               Expanded(child: OutlinedButton(
@@ -372,12 +419,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           active: state == AlarmState.armedAway,
                           busy: c.actionBusy,
                           onTap: () => _confirm('arm', 'Armar',
-                              kRed, Icons.lock_rounded),
+                              kRed, Icons.lock_rounded, warning: _robotWarning()),
                         )),
                       ]),
                       if (c.showArmModes && state == AlarmState.disarmed) ...[
                         const SizedBox(height: 12),
                         _ArmModesRow(controller: c, onConfirm: _confirm),
+                      ],
+                      if (state == AlarmState.arming && _robotWarning() != null) ...[
+                        const SizedBox(height: 16),
+                        Text(_robotWarning()!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: kOrange, fontSize: 12)),
+                      ],
+                      if (c.zones.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        ZonesSection(zones: c.zones, busy: c.actionBusy, onArm: _confirmZone),
                       ],
                       const SizedBox(height: 24),
                       Center(

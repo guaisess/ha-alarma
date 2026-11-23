@@ -15,7 +15,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'constants.dart';
 import 'models.dart';
 
-// Versión 2026.11.1
+// Versión 2026.11.2
 // ─── Parseo común de un objeto "state" de HA (REST y WebSocket) ───
 AlarmStateData parseStateData(Map<String, dynamic> data) {
   final attrs = data['attributes'] as Map<String, dynamic>? ?? {};
@@ -56,15 +56,43 @@ class HaService {
     return parseStateData(jsonDecode(res.body) as Map<String, dynamic>);
   }
 
+  /// Estado crudo de una entidad; null si no existe o falla (las zonas son opcionales)
+  Future<Map<String, dynamic>?> _getRaw(String entityId) async {
+    try {
+      final res = await http.get(Uri.parse('${config.url}/api/states/$entityId'),
+          headers: _headers).timeout(_timeout);
+      if (res.statusCode != 200) return null;
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Estados (texto) de las zonas y de sus marcas de desarme automático
+  Future<Map<String, String>> getZoneStates() async {
+    final ids = [
+      for (final z in kZones) ...[z.entityId, if (z.autoFlagEntity != null) z.autoFlagEntity!],
+    ];
+    final raws = await Future.wait(ids.map(_getRaw));
+    return {
+      for (var i = 0; i < ids.length; i++)
+        if (raws[i] != null) ids[i]: raws[i]!['state'] as String? ?? 'unknown',
+    };
+  }
+
+  /// Arma una zona concreta (solo para zonas que no se rearmaron solas)
+  Future<void> armZone(String entityId) => _call('alarm_arm_away',
+      config.code.isNotEmpty ? {'code': config.code} : {}, entityId: entityId);
+
   Future<void> disarm()  => _call('alarm_disarm',  {'code': config.code});
   Future<void> armAway() => _call('alarm_arm_away', {});
   Future<void> armHome() => _call('alarm_arm_home', {});
   Future<void> armNight() => _call('alarm_arm_night', {});
   Future<void> armCustomBypass() => _call('alarm_arm_custom_bypass', {});
 
-  Future<void> _call(String service, Map<String, dynamic> extra) async {
+  Future<void> _call(String service, Map<String, dynamic> extra, {String? entityId}) async {
     final uri  = Uri.parse('${config.url}/api/services/alarm_control_panel/$service');
-    final body = jsonEncode({'entity_id': config.entityId, ...extra});
+    final body = jsonEncode({'entity_id': entityId ?? config.entityId, ...extra});
     final res  = await http.post(uri, headers: _headers, body: body).timeout(_timeout);
     if (res.statusCode != 200 && res.statusCode != 201) {
       throw Exception('HTTP ${res.statusCode}');
@@ -84,14 +112,15 @@ class HaWebSocketService {
   bool _authFailed = false;
   int _msgId = 0;
   int _reconnectAttempts = 0;
-  String? _url, _token, _entityId;
+  String? _url, _token;
+  List<String> _entityIds = const [];
 
-  final void Function(AlarmStateData data) onStateChanged;
+  final void Function(String entityId, Map<String, dynamic> newState) onEntityChanged;
   final void Function(bool connected) onConnectionChanged;
   final void Function()? onAuthError;
 
   HaWebSocketService({
-    required this.onStateChanged,
+    required this.onEntityChanged,
     required this.onConnectionChanged,
     this.onAuthError,
   });
@@ -104,11 +133,11 @@ class HaWebSocketService {
   }
 
   /// Conexión pedida por el usuario/controlador: reinicia el backoff.
-  Future<void> connect(String url, String token, String entityId) async {
+  Future<void> connect(String url, String token, List<String> entityIds) async {
     await disconnect();
     _url = url;
     _token = token;
-    _entityId = entityId;
+    _entityIds = entityIds;
     _authFailed = false;
     _reconnectAttempts = 0;
     await _open();
@@ -149,8 +178,7 @@ class HaWebSocketService {
     try {
       final msg = jsonDecode(raw as String) as Map<String, dynamic>;
       final type = msg['type'] as String;
-      final entityId = _entityId;
-      if (entityId == null) return;
+      if (_entityIds.isEmpty) return;
 
       if (!_authenticated && type == 'auth_required') {
         _ws?.add(jsonEncode({'type': 'auth', 'access_token': _token}));
@@ -163,7 +191,7 @@ class HaWebSocketService {
         _ws?.add(jsonEncode({
           'id': ++_msgId,
           'type': 'subscribe_trigger',
-          'trigger': {'platform': 'state', 'entity_id': entityId},
+          'trigger': {'platform': 'state', 'entity_id': _entityIds},
         }));
         return;
       }
@@ -192,7 +220,8 @@ class HaWebSocketService {
             ?['trigger'] as Map<String, dynamic>?;
         final newState = trigger?['to_state'] as Map<String, dynamic>?;
         if (newState == null) return;
-        onStateChanged(parseStateData(newState));
+        final id = newState['entity_id'] as String?;
+        if (id != null) onEntityChanged(id, newState);
       }
     } catch (e) {
       debugPrint('[HA WS] Parse error: $e');

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'models.dart';
 
 // ─── Constantes de configuración ─────────────────────────────
-// Versión 2026.11.1
+// Versión 2026.11.2
 const kTimeoutSeconds = 5;   // Timeout REST por defecto
 const kPollSeconds    = 15;  // Sondeo REST sin WebSocket
 const kPollWsSeconds  = 30;  // Sondeo REST con WebSocket conectado
@@ -16,6 +16,18 @@ const kNotifChannelId   = 'ha_alarm_channel';
 const kNotifChannelName = 'Alarma Casa HA';
 const kBackupDir        = '/storage/emulated/0/Download/Alarma Casa Backups';
 const kBackupVersion    = '1.2';
+
+// ─── Zonas de Alarmo (informativas) ───────────────────────────
+const kZones = [
+  ZoneDef(entityId: 'alarm_control_panel.perimetro',
+      label: 'Perímetro', icon: Icons.shield_rounded),
+  ZoneDef(entityId: 'alarm_control_panel.planta_baja',
+      label: 'Planta baja', icon: Icons.door_front_door_rounded,
+      autoFlagEntity: 'input_boolean.robots_alarma_desarmada_auto_planta_baja'),
+  ZoneDef(entityId: 'alarm_control_panel.planta_alta',
+      label: 'Planta alta', icon: Icons.bed_rounded,
+      autoFlagEntity: 'input_boolean.robots_alarma_desarmada_auto_planta_alta'),
+];
 
 // ─── Colores ──────────────────────────────────────────────────
 const kBg      = Color(0xFF0f172a);

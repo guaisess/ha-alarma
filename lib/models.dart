@@ -1,4 +1,4 @@
-// Versión 2026.11.1
+// Versión 2026.11.2
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -57,6 +57,28 @@ class AlarmStateData {
     delay:       json['delay'] as int?,
     openSensors: (json['openSensors'] as List?)?.cast<String>() ?? [],
   );
+}
+
+// ─── Zonas de Alarmo (solo informativas) ──────────────────────
+class ZoneDef {
+  final String   entityId, label;
+  final IconData icon;
+  /// input_boolean que marca que la zona la desarmó la automatización de robots
+  final String?  autoFlagEntity;
+  const ZoneDef({
+    required this.entityId, required this.label,
+    required this.icon, this.autoFlagEntity,
+  });
+}
+
+class ZoneData {
+  final ZoneDef    def;
+  final AlarmState state;
+  final bool       autoDisarmed;
+  const ZoneData({required this.def, required this.state, required this.autoDisarmed});
+
+  /// Solo se puede armar una zona que un robot desarmó y aún no se rearmó
+  bool get canArm => autoDisarmed && state == AlarmState.disarmed;
 }
 
 // ─── Tema ─────────────────────────────────────────────────────

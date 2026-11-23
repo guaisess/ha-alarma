@@ -1,4 +1,4 @@
-// Versión 2026.11.1
+// Versión 2026.11.2
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'constants.dart';
@@ -14,6 +14,7 @@ class AlarmController extends ChangeNotifier {
   bool             _actionBusy     = false;
   bool             _wsConnected    = false;
   String?          _error;
+  Map<String, String> _zoneRaw = {}; // estado de zonas y marcas de robot
 
   HaWebSocketService? _ws;
   Timer?  _pollTimer;
@@ -31,10 +32,24 @@ class AlarmController extends ChangeNotifier {
   bool            get showArmModes => _config?.showArmModes ?? false;
   String?         get error       => _error;
 
+  /// Zonas conocidas (solo las que existen en HA)
+  List<ZoneData> get zones => [
+    for (final d in kZones)
+      if (_zoneRaw.containsKey(d.entityId))
+        ZoneData(
+          def: d,
+          state: parseState(_zoneRaw[d.entityId]!),
+          autoDisarmed: d.autoFlagEntity != null && _zoneRaw[d.autoFlagEntity] == 'on',
+        ),
+  ];
+
+  /// Zonas desarmadas por la automatización de robots
+  List<ZoneData> get robotZones => zones.where((z) => z.autoDisarmed).toList();
+
   /// Crea el servicio WebSocket (una sola vez) con sus callbacks.
   void _ensureWs() {
     _ws ??= HaWebSocketService(
-      onStateChanged: _onWsState,
+      onEntityChanged: _onWsEntity,
       onConnectionChanged: (c) {
         if (c == _wsConnected) return; // evita notificar y reprogramar sin cambio
         _wsConnected = c;
@@ -76,9 +91,49 @@ class AlarmController extends ChangeNotifier {
   Future<void> _initWs() async {
     if (_config == null || !_config!.isValid) return;
     try {
-      await _ws?.connect(_config!.url, _config!.token, _config!.entityId);
+      await _ws?.connect(_config!.url, _config!.token, _watchedEntities());
     } catch (e) {
       debugPrint('[Controller] WS init error: $e');
+    }
+  }
+
+  /// Enruta un evento del WebSocket: alarma maestra o zona/marca de robot
+  void _onWsEntity(String id, Map<String, dynamic> s) {
+    if (id == _config?.entityId) {
+      _onWsState(parseStateData(s));
+      return;
+    }
+    _zoneRaw = {..._zoneRaw, id: s['state'] as String? ?? 'unknown'};
+    notifyListeners();
+  }
+
+  /// Entidades que escucha el WebSocket (filtradas en el servidor)
+  List<String> _watchedEntities() => [
+    _config!.entityId,
+    for (final z in kZones) ...[z.entityId, if (z.autoFlagEntity != null) z.autoFlagEntity!],
+  ];
+
+  Future<void> _refreshZones() async {
+    if (_config == null || !_config!.isValid) return;
+    _zoneRaw = await HaService(_config!).getZoneStates();
+    notifyListeners();
+  }
+
+  /// Arma una zona que no se rearmó sola tras la limpieza del robot
+  Future<void> armZone(ZoneDef zone) async {
+    _actionBusy = true;
+    notifyListeners();
+    try {
+      await HaService(_config!).armZone(zone.entityId);
+      await FeedbackService.confirm();
+      await Future.delayed(const Duration(milliseconds: 800));
+      await _refreshZones();
+    } catch (e) {
+      await FeedbackService.error();
+      rethrow;
+    } finally {
+      _actionBusy = false;
+      notifyListeners();
     }
   }
 
@@ -125,6 +180,7 @@ class AlarmController extends ChangeNotifier {
           WidgetService.update(data.state);
           StateCache.save(data);
           notifyListeners();
+          _refreshZones();
           return;
         } catch (e) {
           if (attempt == maxRetries) {

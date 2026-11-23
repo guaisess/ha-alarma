@@ -248,6 +248,12 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v2026.11.2
+- 🗺️ Zonas de Alarmo (Perímetro, Planta baja, Planta alta) en solo lectura bajo los botones de la pantalla principal
+- 🤖 Indicador "Desarmada por robot" (según `input_boolean.robots_alarma_desarmada_auto_*`) y botón "Armar" solo en zonas que el robot no rearmó
+- ⚠️ Aviso al armar de forma completa si hay un robot con zona desarmada (puede quedarse en "Armando")
+- 🔌 WebSocket: una sola suscripción filtrada a la alarma, las zonas y las marcas de robot
+
 ### v2026.11.1 (antes 1.5.1)
 - 🔌 WebSocket: la reconexión ya respeta el backoff (antes se reseteaba y reintentaba cada segundo)
 - 🔌 WebSocket: suscripción filtrada en servidor (`subscribe_trigger` solo de la entidad de alarma) en lugar de todos los `state_changed`
