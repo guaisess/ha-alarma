@@ -2,9 +2,20 @@ import 'package:flutter/material.dart';
 import 'models.dart';
 
 // ─── Constantes de configuración ─────────────────────────────
-const kTimeoutSeconds = 5;
-const kPollSeconds    = 15;
+// Versión 1.5.1
+const kTimeoutSeconds = 5;   // Timeout REST por defecto
+const kPollSeconds    = 15;  // Sondeo REST sin WebSocket
+const kPollWsSeconds  = 30;  // Sondeo REST con WebSocket conectado
 const kMaxRetries     = 3;
+const kWsConnectTimeoutSeconds = 10;           // Timeout de conexión WebSocket
+const kWsBackoff      = [1, 2, 4, 8, 15, 30];  // Esperas de reconexión (s)
+const kUpdateCheckTimeoutSeconds = 10;         // Timeout de comprobación de versión
+const kLabelRefreshSeconds = 5;                // Refresco de la etiqueta "Hace Xs"
+const kHistoryMaxSize = 50;                    // Entradas máximas del historial
+const kNotifChannelId   = 'ha_alarm_channel';
+const kNotifChannelName = 'Alarma Casa HA';
+const kBackupDir        = '/storage/emulated/0/Download/Alarma Casa Backups';
+const kBackupVersion    = '1.2';
 
 // ─── Colores ──────────────────────────────────────────────────
 const kBg      = Color(0xFF0f172a);

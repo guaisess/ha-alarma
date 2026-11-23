@@ -124,7 +124,7 @@ La app incluye dos widgets para añadir al escritorio de Android:
 | Widget | Tamaño | Contenido |
 |---|---|---|
 | Alarma Casa | 2×2 | Icono de estado, texto del estado, hora de actualización |
-| Alarma Casa Wide | 2×1 | Icono a la izquierda, estado y hora a la derecha |
+| Alarma Casa Wide | 2×1 | Tres líneas centradas: título, estado y hora |
 
 Para añadirlos: mantén pulsado en el escritorio → Widgets → busca "Alarma Casa".
 El widget se actualiza automáticamente cada vez que la app refresca el estado.
@@ -188,8 +188,8 @@ automation:
 
 ```json
 {
-  "version": "1.2.7",
-  "url": "https://github.com/guaisess/ha-alarma/releases/download/v1.2.7/app-release.apk"
+  "version": "1.5.1",
+  "url": "https://github.com/guaisess/ha-alarma/releases/download/v1.5.1/app-release.apk"
 }
 ```
 
@@ -247,6 +247,17 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 ---
 
 ## 📋 Historial de versiones
+
+### v1.5.1
+- 🔌 WebSocket: la reconexión ya respeta el backoff (antes se reseteaba y reintentaba cada segundo)
+- 🔌 WebSocket: suscripción filtrada en servidor (`subscribe_trigger` solo de la entidad de alarma) en lugar de todos los `state_changed`
+- 🔌 `auth_invalid` detiene los reintentos y muestra "Token no válido"
+- ⚡ Sin redibujados cada segundo; el sondeo REST ya no se reinicia con cada evento WS
+- 🧩 Widget: color azul para el estado Vacaciones
+- 💾 Backup: incluye `show_arm_modes`, importación tolerante a tipos y guardado con alternativa en Android 11+
+- 🔐 Migración automática de token/código antiguos al almacén seguro
+- 🛠️ Constantes centralizadas en `constants.dart`; parseo de estado unificado (REST/WS)
+- 📝 README: estructura y ejemplos actualizados
 
 ### v1.5.0
 - 🏠 Nuevos modos de armado: Casa, Noche, Vacaciones

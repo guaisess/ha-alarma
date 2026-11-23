@@ -26,6 +26,7 @@ private fun colorForState(key: String): Int = when (key) {
     "arming"     -> android.graphics.Color.parseColor("#f97316")
     "armedNight" -> android.graphics.Color.parseColor("#a855f7")
     "pending"    -> android.graphics.Color.parseColor("#facc15")
+    "armedCustomBypass" -> android.graphics.Color.parseColor("#3b82f6")
     else         -> android.graphics.Color.parseColor("#94a3b8")
 }
 

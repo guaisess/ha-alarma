@@ -1,3 +1,4 @@
+// Versión 1.5.1
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -71,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           n.body,
           const NotificationDetails(
             android: AndroidNotificationDetails(
-              'ha_alarm_channel', 'Alarma Casa HA',
+              kNotifChannelId, kNotifChannelName,
               channelDescription: 'Notificaciones de estado de la alarma',
               importance: Importance.max,
               priority: Priority.high,

@@ -1,3 +1,4 @@
+// Versión 1.5.1
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -35,7 +36,7 @@ void main() async {
   );
 
   const channel = AndroidNotificationChannel(
-    'ha_alarm_channel', 'Alarma Casa HA',
+    kNotifChannelId, kNotifChannelName,
     description: 'Notificaciones de estado de la alarma',
     importance: Importance.max,
   );

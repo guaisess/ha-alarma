@@ -1,8 +1,6 @@
+// Versión 1.5.1
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'constants.dart';
 import 'models.dart';
 import 'services.dart';
@@ -33,6 +31,25 @@ class AlarmController extends ChangeNotifier {
   bool            get showArmModes => _config?.showArmModes ?? false;
   String?         get error       => _error;
 
+  /// Crea el servicio WebSocket (una sola vez) con sus callbacks.
+  void _ensureWs() {
+    _ws ??= HaWebSocketService(
+      onStateChanged: _onWsState,
+      onConnectionChanged: (c) {
+        if (c == _wsConnected) return; // evita notificar y reprogramar sin cambio
+        _wsConnected = c;
+        notifyListeners();
+        // Con WS conectado basta un sondeo lento; sin él, el rápido
+        _startPolling(c ? kPollWsSeconds : kPollSeconds);
+        if (c) _refresh(); // resincroniza lo perdido durante la desconexión
+      },
+      onAuthError: () {
+        _error = 'Token no válido';
+        notifyListeners();
+      },
+    );
+  }
+
   Future<void> init() async {
     _config = await Config.load();
     if (_config!.isValid) {
@@ -40,23 +57,14 @@ class AlarmController extends ChangeNotifier {
       _loading = false;
       notifyListeners();
 
-      _ws = HaWebSocketService(
-        onStateChanged: _onWsState,
-        onConnectionChanged: (c) {
-          _wsConnected = c;
-          notifyListeners();
-          if (c) {
-            _pollTimer?.cancel();
-            _startPolling(30);
-          }
-        },
-      );
-
+      _ensureWs();
       await _refresh();
       _initWs();
       _startPolling();
-      _lastFetchTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (_stateData != null) notifyListeners();
+      // Solo refresca la etiqueta "Hace Xs", no cada segundo
+      _lastFetchTimer = Timer.periodic(
+          const Duration(seconds: kLabelRefreshSeconds), (_) {
+        if (_stateData != null && !(_stateData!.hasCountdown)) notifyListeners();
       });
     } else {
       _loading = false;
@@ -84,8 +92,6 @@ class AlarmController extends ChangeNotifier {
     _updateCountdownTimer(data);
     WidgetService.update(data.state);
     StateCache.save(data);
-    _pollTimer?.cancel();
-    _startPolling(30);
     notifyListeners();
   }
 
@@ -173,11 +179,18 @@ class AlarmController extends ChangeNotifier {
   Future<void> reloadConfig() async {
     _config = await Config.load();
     await _ws?.disconnect();
-    _initWs();
+    _wsConnected = false;
     if (_config!.isValid) {
+      _ensureWs();
+      _lastFetchTimer ??= Timer.periodic(
+          const Duration(seconds: kLabelRefreshSeconds), (_) {
+        if (_stateData != null && !(_stateData!.hasCountdown)) notifyListeners();
+      });
       await _refresh();
-      _pollTimer?.cancel();
+      _initWs();
       _startPolling();
+    } else {
+      _pollTimer?.cancel();
     }
   }
 

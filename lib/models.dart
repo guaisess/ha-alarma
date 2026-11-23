@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'constants.dart';
 
 // ─── Estado de la alarma ──────────────────────────────────────
 enum AlarmState {
@@ -96,7 +97,7 @@ class Config {
     required this.entityId,
     required this.code,
     required this.updateUrl,
-    this.timeoutSeconds = 5,
+    this.timeoutSeconds = kTimeoutSeconds,
     this.showArmModes   = false,
   });
 
@@ -105,13 +106,22 @@ class Config {
   static Future<Config> load() async {
     final p = await SharedPreferences.getInstance();
     final secure = const FlutterSecureStorage();
+    final token  = await secure.read(key: 'ha_token') ?? p.getString('ha_token') ?? '';
+    final code   = await secure.read(key: 'ha_code')  ?? p.getString('ha_code')  ?? '';
+    // Migración: si quedan token/código en claro, pasarlos al almacén seguro y borrarlos
+    if (p.containsKey('ha_token') || p.containsKey('ha_code')) {
+      if (token.isNotEmpty) await secure.write(key: 'ha_token', value: token);
+      if (code.isNotEmpty)  await secure.write(key: 'ha_code',  value: code);
+      await p.remove('ha_token');
+      await p.remove('ha_code');
+    }
     return Config(
       url:            p.getString('ha_url')       ?? '',
-      token:          await secure.read(key: 'ha_token') ?? p.getString('ha_token') ?? '',
+      token:          token,
       entityId:       p.getString('ha_entity')    ?? '',
-      code:           await secure.read(key: 'ha_code') ?? p.getString('ha_code') ?? '',
+      code:           code,
       updateUrl:      p.getString('ha_updateUrl') ?? '',
-      timeoutSeconds: p.getInt('ha_timeout')      ?? 5,
+      timeoutSeconds: p.getInt('ha_timeout')      ?? kTimeoutSeconds,
       showArmModes:   p.getBool('show_arm_modes') ?? false,
     );
   }
@@ -154,7 +164,7 @@ class HistoryEntry {
 
 class HistoryService {
   static const _key     = 'alarm_history';
-  static const _maxSize = 50;
+  static const _maxSize = kHistoryMaxSize;
 
   static Future<List<HistoryEntry>> load() async {
     final prefs = await SharedPreferences.getInstance();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// Versión 1.5.1
 import 'package:file_picker/file_picker.dart';
 import '../constants.dart';
 import '../models.dart';
@@ -90,7 +91,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
       if (path != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('✅ Backup guardado en Descargas/Alarma Casa Backups'),
+            content: Text('✅ Backup guardado en $path'),
             backgroundColor: kGreen,
             duration: const Duration(seconds: 4),
           ),
@@ -114,7 +115,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
         type: FileType.custom,
         allowedExtensions: ['json'],
         dialogTitle: 'Seleccionar backup',
-        initialDirectory: '/storage/emulated/0/Download/Alarma Casa Backups',
+        initialDirectory: kBackupDir,
       );
 
       if (result == null || result.files.isEmpty) {

@@ -12,7 +12,29 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:vibration/vibration.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'constants.dart';
 import 'models.dart';
+
+// Versión 1.5.1
+// ─── Parseo común de un objeto "state" de HA (REST y WebSocket) ───
+AlarmStateData parseStateData(Map<String, dynamic> data) {
+  final attrs = data['attributes'] as Map<String, dynamic>? ?? {};
+  final lastChanged =
+      DateTime.tryParse(data['last_changed'] as String? ?? '')?.toLocal() ?? DateTime.now();
+
+  int? delay;
+  if (attrs.containsKey('delay')) delay = (attrs['delay'] as num?)?.toInt();
+
+  List<String> openSensors = [];
+  final raw = attrs['open_sensors'];
+  if (raw is Map)  openSensors = raw.keys.map((k) => k.toString()).toList();
+  if (raw is List) openSensors = raw.map((e) => e.toString()).toList();
+
+  return AlarmStateData(
+    state: parseState(data['state'] as String? ?? 'unknown'),
+    lastChanged: lastChanged, delay: delay, openSensors: openSensors,
+  );
+}
 
 // ─── Servicio Home Assistant ──────────────────────────────────
 class HaService {
@@ -31,27 +53,7 @@ class HaService {
     final res = await http.get(uri, headers: _headers).timeout(_timeout);
     if (res.statusCode != 200) throw Exception('HTTP ${res.statusCode}');
 
-    final data        = jsonDecode(res.body);
-    final state       = parseState(data['state'] as String);
-    final attrs       = data['attributes'] as Map<String, dynamic>? ?? {};
-    final lastChanged = DateTime.parse(data['last_changed'] as String).toLocal();
-
-    int? delay;
-    if (attrs.containsKey('delay')) {
-      delay = (attrs['delay'] as num?)?.toInt();
-    }
-
-    List<String> openSensors = [];
-    if (attrs.containsKey('open_sensors')) {
-      final raw = attrs['open_sensors'];
-      if (raw is Map)  openSensors = raw.keys.map((k) => k.toString()).toList();
-      if (raw is List) openSensors = raw.map((e) => e.toString()).toList();
-    }
-
-    return AlarmStateData(
-      state: state, lastChanged: lastChanged,
-      delay: delay,  openSensors: openSensors,
-    );
+    return parseStateData(jsonDecode(res.body) as Map<String, dynamic>);
   }
 
   Future<void> disarm()  => _call('alarm_disarm',  {'code': config.code});
@@ -71,22 +73,28 @@ class HaService {
 }
 
 // ─── WebSocket para eventos en tiempo real ────────────────────
+// Se suscribe con `subscribe_trigger` filtrando por la entidad en el
+// servidor de HA, de modo que NO recibe todos los state_changed de la casa.
 class HaWebSocketService {
   WebSocket? _ws;
   StreamSubscription? _sub;
   Timer? _reconnectTimer;
   bool _authenticated = false;
   bool _subscribed = false;
+  bool _authFailed = false;
   int _msgId = 0;
   int _reconnectAttempts = 0;
   String? _url, _token, _entityId;
 
-  static const _backoff = [1, 2, 4, 8, 15, 30];
-
   final void Function(AlarmStateData data) onStateChanged;
   final void Function(bool connected) onConnectionChanged;
+  final void Function()? onAuthError;
 
-  HaWebSocketService({required this.onStateChanged, required this.onConnectionChanged});
+  HaWebSocketService({
+    required this.onStateChanged,
+    required this.onConnectionChanged,
+    this.onAuthError,
+  });
 
   String _toWsUrl(String httpUrl) {
     final wsUrl = httpUrl
@@ -95,27 +103,37 @@ class HaWebSocketService {
     return '${wsUrl.replaceAll(RegExp(r'/$'), '')}/api/websocket';
   }
 
+  /// Conexión pedida por el usuario/controlador: reinicia el backoff.
   Future<void> connect(String url, String token, String entityId) async {
     await disconnect();
     _url = url;
     _token = token;
     _entityId = entityId;
+    _authFailed = false;
     _reconnectAttempts = 0;
+    await _open();
+  }
+
+  /// Abre el socket; NO toca el contador de reintentos (antes se reseteaba
+  /// aquí y la reconexión quedaba fija en 1 s).
+  Future<void> _open() async {
+    final url = _url;
+    if (url == null || _authFailed) return;
     onConnectionChanged(false);
     try {
-      final wsUrl = _toWsUrl(url);
-      _ws = await WebSocket.connect(wsUrl).timeout(const Duration(seconds: 10));
+      _ws = await WebSocket.connect(_toWsUrl(url))
+          .timeout(const Duration(seconds: kWsConnectTimeoutSeconds));
       _sub = _ws!.listen(
-        (data) => _handleMessage(data),
+        _handleMessage,
         onDone: _onDisconnected,
         onError: (e) {
           debugPrint('[HA WS] Error: $e');
           _onDisconnected();
         },
+        cancelOnError: true,
       );
     } catch (e) {
       debugPrint('[HA WS] Connection failed: $e');
-      onConnectionChanged(false);
       _scheduleReconnect();
     }
   }
@@ -141,55 +159,40 @@ class HaWebSocketService {
 
       if (!_authenticated && type == 'auth_ok') {
         _authenticated = true;
+        // Filtro en servidor: solo cambios de estado de nuestra entidad
         _ws?.add(jsonEncode({
           'id': ++_msgId,
-          'type': 'subscribe_events',
-          'event_type': 'state_changed',
+          'type': 'subscribe_trigger',
+          'trigger': {'platform': 'state', 'entity_id': entityId},
         }));
         return;
       }
 
       if (!_authenticated && type == 'auth_invalid') {
         debugPrint('[HA WS] Auth invalid');
+        _authFailed = true; // token incorrecto: reintentar no sirve
+        _reconnectTimer?.cancel();
+        onAuthError?.call();
         return;
       }
 
-      if (!_subscribed && type == 'result' && msg['success'] == true) {
-        _subscribed = true;
-        _reconnectAttempts = 0;
-        onConnectionChanged(true);
+      if (!_subscribed && type == 'result') {
+        if (msg['success'] == true) {
+          _subscribed = true;
+          _reconnectAttempts = 0;
+          onConnectionChanged(true);
+        } else {
+          debugPrint('[HA WS] Suscripción rechazada: ${msg['error']}');
+        }
         return;
       }
 
       if (_subscribed && type == 'event') {
-        final event = msg['event'] as Map<String, dynamic>?;
-        if (event == null) return;
-        final eventData = event['data'] as Map<String, dynamic>?;
-        if (eventData == null) return;
-        final eventEntityId = eventData['entity_id'] as String?;
-        if (eventEntityId != entityId) return;
-
-        final newState = eventData['new_state'] as Map<String, dynamic>?;
+        final trigger = (msg['event'] as Map<String, dynamic>?)?['variables']
+            ?['trigger'] as Map<String, dynamic>?;
+        final newState = trigger?['to_state'] as Map<String, dynamic>?;
         if (newState == null) return;
-
-        final state = parseState(newState['state'] as String? ?? 'unknown');
-        final attrs = newState['attributes'] as Map<String, dynamic>? ?? {};
-        final lastChanged = DateTime.tryParse(newState['last_changed'] as String? ?? '')?.toLocal() ?? DateTime.now();
-
-        int? delay;
-        if (attrs.containsKey('delay')) delay = (attrs['delay'] as num?)?.toInt();
-
-        List<String> openSensors = [];
-        if (attrs.containsKey('open_sensors')) {
-          final raw = attrs['open_sensors'];
-          if (raw is Map)  openSensors = raw.keys.map((k) => k.toString()).toList();
-          if (raw is List) openSensors = raw.map((e) => e.toString()).toList();
-        }
-
-        onStateChanged(AlarmStateData(
-          state: state, lastChanged: lastChanged,
-          delay: delay, openSensors: openSensors,
-        ));
+        onStateChanged(parseStateData(newState));
       }
     } catch (e) {
       debugPrint('[HA WS] Parse error: $e');
@@ -197,25 +200,32 @@ class HaWebSocketService {
   }
 
   void _scheduleReconnect() {
-    if (_url == null || _token == null || _entityId == null) return;
-    _reconnectTimer?.cancel();
-    final seconds = _reconnectAttempts < _backoff.length
-        ? _backoff[_reconnectAttempts] : _backoff.last;
+    if (_url == null || _authFailed) return;
+    // onError + onDone pueden llegar seguidos: un solo reintento pendiente
+    if (_reconnectTimer?.isActive ?? false) return;
+    final seconds = kWsBackoff[_reconnectAttempts < kWsBackoff.length
+        ? _reconnectAttempts : kWsBackoff.length - 1];
     _reconnectAttempts++;
     debugPrint('[HA WS] Reconnect in ${seconds}s (attempt $_reconnectAttempts)');
-    _reconnectTimer = Timer(Duration(seconds: seconds),
-        () => connect(_url!, _token!, _entityId!));
+    _reconnectTimer = Timer(Duration(seconds: seconds), () async {
+      await _cleanSocket();
+      await _open();
+    });
   }
 
-  Future<void> disconnect() async {
-    _reconnectTimer?.cancel();
-    _reconnectTimer = null;
+  Future<void> _cleanSocket() async {
     await _sub?.cancel();
     _sub = null;
     await _ws?.close();
     _ws = null;
     _authenticated = false;
     _subscribed = false;
+  }
+
+  Future<void> disconnect() async {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    await _cleanSocket();
   }
 
   bool get isConnected => _subscribed;
@@ -251,13 +261,13 @@ class StateCache {
 class FeedbackService {
   static Future<void> confirm() async {
     await SystemSound.play(SystemSoundType.click);
-    if (await Vibration.hasVibrator() ?? false) {
+    if (await Vibration.hasVibrator()) {
       Vibration.vibrate(duration: 80);
     }
   }
 
   static Future<void> error() async {
-    if (await Vibration.hasVibrator() ?? false) {
+    if (await Vibration.hasVibrator()) {
       Vibration.vibrate(pattern: [0, 100, 80, 100]);
     }
   }
@@ -292,7 +302,7 @@ class UpdateService {
     try {
       final res = await http
           .get(Uri.parse(url))
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: kUpdateCheckTimeoutSeconds));
       if (res.statusCode != 200) return null;
       final data          = jsonDecode(res.body);
       final remoteVersion = data['version'] as String;
@@ -338,7 +348,7 @@ class BackupService {
     final secure = const FlutterSecureStorage();
 
     final backup = {
-      'version': '1.1',
+      'version': kBackupVersion,
       'timestamp': DateTime.now().toIso8601String(),
       'config': {
         'url':       prefs.getString('ha_url')       ?? '',
@@ -346,7 +356,8 @@ class BackupService {
         'entity':    prefs.getString('ha_entity')    ?? '',
         'code':      await secure.read(key: 'ha_code') ?? prefs.getString('ha_code') ?? '',
         'updateUrl': prefs.getString('ha_updateUrl') ?? '',
-        'timeout':   prefs.getInt('ha_timeout')      ?? 5,
+        'timeout':   prefs.getInt('ha_timeout')      ?? kTimeoutSeconds,
+        'showArmModes': prefs.getBool('show_arm_modes') ?? false,
         'theme':     prefs.getString('app_theme')    ?? 'system',
       },
     };
@@ -367,13 +378,14 @@ class BackupService {
       final prefs = await SharedPreferences.getInstance();
       final secure = const FlutterSecureStorage();
 
-      if (config['url'] != null) await prefs.setString('ha_url', config['url']);
-      if (config['token'] != null) await secure.write(key: 'ha_token', value: config['token']);
-      if (config['entity'] != null) await prefs.setString('ha_entity', config['entity']);
-      if (config['code'] != null) await secure.write(key: 'ha_code', value: config['code']);
-      if (config['updateUrl'] != null) await prefs.setString('ha_updateUrl', config['updateUrl']);
-      if (config['timeout'] != null) await prefs.setInt('ha_timeout', config['timeout']);
-      if (config['theme'] != null) await prefs.setString('app_theme', config['theme']);
+      if (config['url'] != null) await prefs.setString('ha_url', config['url'].toString());
+      if (config['token'] != null) await secure.write(key: 'ha_token', value: config['token'].toString());
+      if (config['entity'] != null) await prefs.setString('ha_entity', config['entity'].toString());
+      if (config['code'] != null) await secure.write(key: 'ha_code', value: config['code'].toString());
+      if (config['updateUrl'] != null) await prefs.setString('ha_updateUrl', config['updateUrl'].toString());
+      if (config['timeout'] != null) await prefs.setInt('ha_timeout', (config['timeout'] as num).toInt());
+      if (config['showArmModes'] is bool) await prefs.setBool('show_arm_modes', config['showArmModes']);
+      if (config['theme'] != null) await prefs.setString('app_theme', config['theme'].toString());
 
       if (data['history'] is List) {
         final history = (data['history'] as List)
@@ -397,11 +409,14 @@ class BackupService {
     try {
       final backup = await export(includeHistory: includeHistory);
 
-      final downloadsPath = '/storage/emulated/0/Download';
-      final backupDir = Directory('$downloadsPath/Alarma Casa Backups');
-
-      if (!await backupDir.exists()) {
-        await backupDir.create(recursive: true);
+      Directory backupDir = Directory(kBackupDir);
+      try {
+        if (!await backupDir.exists()) await backupDir.create(recursive: true);
+      } catch (_) {
+        // Sin permiso sobre Descargas (Android 11+): usar carpeta propia de la app
+        final ext = await getExternalStorageDirectory();
+        backupDir = Directory('${ext!.path}/backups');
+        if (!await backupDir.exists()) await backupDir.create(recursive: true);
       }
 
       final filename = _generateFilename();
