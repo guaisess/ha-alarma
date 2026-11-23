@@ -1,4 +1,4 @@
-// Versión 1.5.1
+// Versión 2026.11.1
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'constants.dart';

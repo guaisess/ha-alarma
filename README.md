@@ -188,8 +188,8 @@ automation:
 
 ```json
 {
-  "version": "1.5.1",
-  "url": "https://github.com/guaisess/ha-alarma/releases/download/v1.5.1/app-release.apk"
+  "version": "2026.11.1",
+  "url": "https://github.com/guaisess/ha-alarma/releases/download/v2026.11.1/app-release.apk"
 }
 ```
 
@@ -248,7 +248,7 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
-### v1.5.1
+### v2026.11.1 (antes 1.5.1)
 - 🔌 WebSocket: la reconexión ya respeta el backoff (antes se reseteaba y reintentaba cada segundo)
 - 🔌 WebSocket: suscripción filtrada en servidor (`subscribe_trigger` solo de la entidad de alarma) en lugar de todos los `state_changed`
 - 🔌 `auth_invalid` detiene los reintentos y muestra "Token no válido"
