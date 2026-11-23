@@ -63,11 +63,7 @@ jobs:
           with open(path, 'r') as f:
               txt = f.read()
 
-          # 1. Add usesCleartextTraffic
-          txt = txt.replace(
-              '<application',
-              '<application android:usesCleartextTraffic="true"'
-          )
+          # 1. (sin usesCleartextTraffic: la app solo usa HTTPS/WSS)
 
           # 2. Change app label
           txt = txt.replace(

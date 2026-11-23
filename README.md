@@ -248,6 +248,9 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v2026.11.10
+- 🔒 Seguridad: se quita `usesCleartextTraffic`; la app solo admite conexiones cifradas (HTTPS/WSS). La URL de HA debe empezar por `https://`
+
 ### v2026.11.9
 - 🛠️ CI: ejecuta `flutter test` antes de compilar; acciones actualizadas a versiones con Node 24 (checkout v7, setup-java v6, upload-artifact v7, action-gh-release v3)
 
