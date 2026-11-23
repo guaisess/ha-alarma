@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// Versión 2026.11.4
+// Versión 2026.11.7
 import 'package:file_picker/file_picker.dart';
 import '../constants.dart';
 import '../models.dart';
@@ -21,6 +21,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   final _codeCtrl      = TextEditingController();
   final _updateUrlCtrl = TextEditingController();
   final _timeoutCtrl   = TextEditingController();
+  final _deviceCtrl    = TextEditingController();
 
   bool         _obscureToken = true, _obscureCode = true;
   bool         _saving = false, _testing = false;
@@ -39,6 +40,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
         _codeCtrl.text      = c.code;
         _updateUrlCtrl.text = c.updateUrl;
         _timeoutCtrl.text   = c.timeoutSeconds.toString();
+        _deviceCtrl.text    = c.deviceName;
       });
     });
     SharedPreferences.getInstance().then((prefs) {
@@ -57,6 +59,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
     updateUrl:      _updateUrlCtrl.text.trim(),
     timeoutSeconds: int.tryParse(_timeoutCtrl.text.trim()) ?? kTimeoutSeconds,
     showArmModes:   _showArmModes,
+    deviceName:     Config.cleanDeviceName(_deviceCtrl.text),
   );
 
   Future<void> _test() async {
@@ -296,6 +299,8 @@ class _ConfigScreenState extends State<ConfigScreen> {
               InputField(ctrl: _tokenCtrl, label: 'Token de acceso (Long-Lived)', hint: 'eyJhbGciOiJIUzI1NiIs...',   icon: Icons.vpn_key_rounded, fieldBg: fieldBg, subtextColor: subtextColor, textColor: textColor, obscure: _obscureToken, onToggle: () => setState(() => _obscureToken = !_obscureToken)),
               const SizedBox(height: 14),
               InputField(ctrl: _entityCtrl, label: 'Entity ID de la alarma', hint: 'alarm_control_panel.alarmo', icon: Icons.security_rounded, fieldBg: fieldBg, subtextColor: subtextColor, textColor: textColor),
+              const SizedBox(height: 14),
+              InputField(ctrl: _deviceCtrl, label: 'Nombre de este móvil (avisos push)', hint: 'alfredo', icon: Icons.phone_android_rounded, fieldBg: fieldBg, subtextColor: subtextColor, textColor: textColor),
             ],
           ),
 

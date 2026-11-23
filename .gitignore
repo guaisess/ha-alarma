@@ -1,0 +1,6 @@
+# Generados por Flutter (el CI los crea al compilar)
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock

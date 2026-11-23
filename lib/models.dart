@@ -1,4 +1,4 @@
-// Versión 2026.11.4
+// Versión 2026.11.7
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -115,6 +115,7 @@ ThemeMode toFlutterThemeMode(AppThemeMode m) {
 // ─── Config ───────────────────────────────────────────────────
 class Config {
   final String url, token, entityId, code, updateUrl;
+  final String deviceName; // nombre con el que se registra el token FCM en HA
   final int    timeoutSeconds;
   final bool   showArmModes;
 
@@ -126,7 +127,14 @@ class Config {
     required this.updateUrl,
     this.timeoutSeconds = kTimeoutSeconds,
     this.showArmModes   = false,
+    this.deviceName     = '',
   });
+
+  /// Nombre válido para HA: minúsculas, números, guion y guion bajo (máx. 30)
+  static String cleanDeviceName(String s) {
+    final c = s.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9_-]'), '');
+    return c.length > 30 ? c.substring(0, 30) : c;
+  }
 
   bool get isValid => url.isNotEmpty && token.isNotEmpty && entityId.isNotEmpty;
 
@@ -150,6 +158,7 @@ class Config {
       updateUrl:      p.getString('ha_updateUrl') ?? '',
       timeoutSeconds: p.getInt('ha_timeout')      ?? kTimeoutSeconds,
       showArmModes:   p.getBool('show_arm_modes') ?? false,
+      deviceName:     p.getString('device_name')  ?? '',
     );
   }
 
@@ -160,6 +169,7 @@ class Config {
     await p.setString('ha_updateUrl', updateUrl);
     await p.setInt('ha_timeout',      timeoutSeconds);
     await p.setBool('show_arm_modes', showArmModes);
+    await p.setString('device_name',  deviceName);
 
     final secure = const FlutterSecureStorage();
     if (token.isNotEmpty) await secure.write(key: 'ha_token', value: token);

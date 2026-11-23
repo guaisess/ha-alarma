@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'models.dart';
 
 // ─── Constantes de configuración ─────────────────────────────
-// Versión 2026.11.5
+// Versión 2026.11.7
 const kTimeoutSeconds = 5;   // Timeout REST por defecto
 const kPollSeconds    = 15;  // Sondeo REST sin WebSocket
 const kPollWsSeconds  = 30;  // Sondeo REST con WebSocket conectado
@@ -17,6 +17,7 @@ const kNotifChannelId   = 'ha_alarm_channel';
 const kNotifChannelName = 'Alarma Casa HA';
 const kBackupDir        = '/storage/emulated/0/Download/Alarma Casa Backups';
 const kBackupVersion    = '1.2';
+const kFcmEvent         = 'ha_alarma_registrar_token'; // evento HA que registra el token FCM
 
 // ─── Zonas de Alarmo (informativas) ───────────────────────────
 const kZones = [

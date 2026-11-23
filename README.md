@@ -248,6 +248,15 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v2026.11.9
+- 🛠️ CI: ejecuta `flutter test` antes de compilar; acciones actualizadas a versiones con Node 24 (checkout v7, setup-java v6, upload-artifact v7, action-gh-release v3)
+
+### v2026.11.8
+- 🧪 Pruebas unitarias (`flutter test`): estados, zonas, configuración, historial, parseo de HA y comparación de versiones
+
+### v2026.11.7
+- 📲 La app registra sola su token FCM en HA: nuevo campo "Nombre de este móvil" en Ajustes; HA lo guarda en `fcm_tokens.json` (evento `ha_alarma_registrar_token`)
+
 ### v2026.11.6
 - 🔔 Al tocar una notificación con zona, la app se abre, se desplaza hasta las zonas y resalta la zona 5 s (app abierta, en segundo plano o cerrada)
 

@@ -15,7 +15,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'constants.dart';
 import 'models.dart';
 
-// Versión 2026.11.5
+// Versión 2026.11.8
 // ─── Parseo común de un objeto "state" de HA (REST y WebSocket) ───
 AlarmStateData parseStateData(Map<String, dynamic> data) {
   final attrs = data['attributes'] as Map<String, dynamic>? ?? {};
@@ -90,6 +90,18 @@ class HaService {
       for (var i = 0; i < ids.length; i++)
         ids[i]: ((raws[i]?['attributes'] as Map?)?['friendly_name'] as String?) ?? '',
     };
+  }
+
+  /// Avisa a HA del token FCM de este móvil (evento que registra una automatización)
+  Future<void> registerFcmToken(String name, String token) async {
+    final res = await http.post(
+      Uri.parse('${config.url}/api/events/$kFcmEvent'),
+      headers: _headers,
+      body: jsonEncode({'nombre': name, 'token': token}),
+    ).timeout(_timeout);
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception('HTTP ${res.statusCode}');
+    }
   }
 
   /// Arma una zona concreta (solo para zonas que no se rearmaron solas)
@@ -272,6 +284,28 @@ class HaWebSocketService {
   bool get isConnected => _subscribed;
 }
 
+// ─── Registro automático del token FCM en HA ──────────────────
+class FcmRegistrationService {
+  static const _keyDone = 'fcm_registered'; // "nombre|token" ya enviado
+
+  /// Envía el token a HA si hay nombre de dispositivo y no se envió ya.
+  /// Se llama al obtener/renovar el token y al guardar la configuración.
+  static Future<void> sync() async {
+    try {
+      final cfg   = await Config.load();
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('fcm_token') ?? '';
+      if (!cfg.isValid || cfg.deviceName.isEmpty || token.isEmpty) return;
+      final marca = '${cfg.deviceName}|$token';
+      if (prefs.getString(_keyDone) == marca) return;
+      await HaService(cfg).registerFcmToken(cfg.deviceName, token);
+      await prefs.setString(_keyDone, marca);
+    } catch (e) {
+      debugPrint('[FCM] Registro en HA fallido (se reintentará): $e');
+    }
+  }
+}
+
 // ─── Cache de estado ──────────────────────────────────────────
 class StateCache {
   static const _key = 'cached_state';
@@ -323,7 +357,7 @@ class UpdateInfo {
 class UpdateService {
   static DateTime? _ultimaComprobacion; // última lectura correcta de version.json
 
-  static bool _isNewer(String remote, String current) {
+  static bool isNewer(String remote, String current) {
     List<int> parse(String v) =>
         v.split('.').map((e) => int.tryParse(e) ?? 0).toList();
     final r = parse(remote);
@@ -355,7 +389,7 @@ class UpdateService {
       final info          = await PackageInfo.fromPlatform();
       final prefs         = await SharedPreferences.getInstance();
       if (prefs.getString('last_update_notified') == remoteVersion) return null;
-      if (_isNewer(remoteVersion, info.version)) {
+      if (isNewer(remoteVersion, info.version)) {
         return UpdateInfo(version: remoteVersion, apkUrl: apkUrl);
       }
     } catch (e) {
@@ -403,6 +437,7 @@ class BackupService {
         'updateUrl': prefs.getString('ha_updateUrl') ?? '',
         'timeout':   prefs.getInt('ha_timeout')      ?? kTimeoutSeconds,
         'showArmModes': prefs.getBool('show_arm_modes') ?? false,
+        'deviceName':   prefs.getString('device_name') ?? '',
         'theme':     prefs.getString('app_theme')    ?? 'system',
       },
     };
@@ -429,6 +464,7 @@ class BackupService {
       if (config['code'] != null) await secure.write(key: 'ha_code', value: config['code'].toString());
       if (config['updateUrl'] != null) await prefs.setString('ha_updateUrl', config['updateUrl'].toString());
       if (config['timeout'] != null) await prefs.setInt('ha_timeout', (config['timeout'] as num).toInt());
+      if (config['deviceName'] is String) await prefs.setString('device_name', config['deviceName']);
       if (config['showArmModes'] is bool) await prefs.setBool('show_arm_modes', config['showArmModes']);
       if (config['theme'] != null) await prefs.setString('app_theme', config['theme'].toString());
 

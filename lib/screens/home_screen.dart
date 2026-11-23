@@ -1,4 +1,4 @@
-// Versión 2026.11.6
+// Versión 2026.11.7
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -95,11 +95,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (token != null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('fcm_token', token);
+        FcmRegistrationService.sync();
       }
 
       messaging.onTokenRefresh.listen((newToken) async {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('fcm_token', newToken);
+        FcmRegistrationService.sync();
       });
 
       // Tocar el aviso con la app en segundo plano o cerrada

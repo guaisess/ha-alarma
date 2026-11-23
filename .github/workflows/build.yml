@@ -17,10 +17,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -47,7 +47,6 @@ jobs:
         run: |
           flutter create --project-name ha_alarm --org com.homeassistant /tmp/flutter_base
           cp -r /tmp/flutter_base/android ${{ env.PROJECT_DIR }}/
-          cp -r /tmp/flutter_base/test    ${{ env.PROJECT_DIR }}/
 
       - name: Clear Gradle cache
         run: |
@@ -165,6 +164,10 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: flutter pub get
 
+      - name: Run tests
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: flutter test
+
       - name: Generate launcher icons
         working-directory: ${{ env.PROJECT_DIR }}
         run: dart run flutter_launcher_icons
@@ -174,14 +177,14 @@ jobs:
         run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ha-alarm-apk
           path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ env.APP_VERSION }}
           name: v${{ env.APP_VERSION }}

@@ -1,4 +1,4 @@
-// Versión 2026.11.5
+// Versión 2026.11.7
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'constants.dart';
@@ -138,6 +138,7 @@ class AlarmController extends ChangeNotifier {
       notifyListeners();
     }
     if (_config!.updateUrl.isNotEmpty) _checkUpdate();
+    FcmRegistrationService.sync();
   }
 
   Future<void> _initWs() async {
@@ -297,6 +298,7 @@ class AlarmController extends ChangeNotifier {
 
   Future<void> reloadConfig() async {
     _config = await Config.load();
+    FcmRegistrationService.sync(); // por si cambió el nombre del dispositivo
     await _ws?.disconnect();
     _wsConnected = false;
     if (_config!.isValid) {
