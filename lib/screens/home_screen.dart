@@ -1,4 +1,4 @@
-// Versión 2026.11.17
+// Versión 2026.11.18
 import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -387,7 +387,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               data.openSensors.isNotEmpty &&
                               (state == AlarmState.arming ||
                                   state == AlarmState.triggered ||
-                                  state == AlarmState.disarmed)) ...[
+                                  state == AlarmState.pending ||
+                                  (state == AlarmState.disarmed &&
+                                      DateTime.now().difference(data.lastChanged).inMinutes <
+                                          kOpenSensorsDisarmedMinutes))) ...[
                             const SizedBox(height: 14),
                             OpenSensorsWarning(sensors: data.openSensors, names: c.sensorNames),
                           ],

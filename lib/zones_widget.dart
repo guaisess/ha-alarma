@@ -1,4 +1,4 @@
-// Versión 2026.11.17
+// Versión 2026.11.18
 import 'package:material_ui/material_ui.dart';
 import 'constants.dart';
 import 'models.dart';
@@ -65,7 +65,7 @@ class ZonesSection extends StatelessWidget {
           if (z.autoDisarmed)
             Text('🤖 Desarmada por robot',
                 style: TextStyle(color: subtext, fontSize: 11)),
-          if (z.openSensors.isNotEmpty)
+          if (z.openSensors.isNotEmpty && z.state != AlarmState.disarmed)
             Text('⚠️ Abiertos: ${z.openSensors.map(_name).join(', ')}',
                 style: const TextStyle(color: kRed, fontSize: 11)),
           if (z.bypassedSensors.isNotEmpty)

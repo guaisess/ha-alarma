@@ -234,6 +234,9 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v2026.11.18
+- 🧹 Los sensores abiertos de un armado fallido ya no se quedan en pantalla: tras un armado fallido se ocultan a los 5 minutos (o al volver a armar) y no se muestran en las zonas desarmadas
+
 ### v2026.11.17
 - 💾 Copia de seguridad: se guarda con el selector del sistema (las rutas directas a Descargas no funcionan desde Android 11); al importar una copia con otra URL se borran el token y el código actuales si la copia no trae los suyos
 - 🧩 Widget: se marca "⚠ Sin actualizar" en gris si el estado tiene más de 10 minutos; se refresca cada 30 min y ya no se pone en "Sin conexión" en cada arranque

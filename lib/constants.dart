@@ -1,4 +1,4 @@
-// Versión 2026.11.17
+// Versión 2026.11.18
 import 'package:material_ui/material_ui.dart';
 import 'models.dart';
 
@@ -9,6 +9,7 @@ const kPollSeconds    = 15;  // Sondeo REST sin WebSocket
 const kPollWsSeconds  = 30;  // Sondeo REST con WebSocket conectado
 const kMaxRetries     = 3;
 const kWsConnectTimeoutSeconds = 10;           // Timeout de conexión WebSocket
+const kOpenSensorsDisarmedMinutes = 5;          // Tras un armado fallido, el aviso de sensores abiertos se oculta pasado este tiempo
 const kWsPingSeconds   = 30;                   // Latido para detectar sockets colgados
 const kSensorNameRetryMinutes = 5;             // Reintento de nombres de sensores que fallaron
 const kWsBackoff      = [1, 2, 4, 8, 15, 30];  // Esperas de reconexión (s)
