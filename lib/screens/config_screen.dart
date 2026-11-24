@@ -1,5 +1,5 @@
-// Versión 2026.11.12
-import 'package:flutter/material.dart';
+// Versión 2026.11.17
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // Versión 2026.11.12
 import 'package:file_picker/file_picker.dart';
@@ -61,6 +61,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
   );
 
   Future<void> _test() async {
+    final urlError = _buildConfig().urlError;
+    if (urlError != null) {
+      setState(() => _testResult = '❌ $urlError');
+      return;
+    }
     setState(() { _testing = true; _testResult = null; });
     try {
       final d = await HaService(_buildConfig()).getState();
@@ -74,6 +79,12 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   Future<void> _save() async {
+    final urlError = _buildConfig().urlError;
+    if (urlError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ $urlError'), backgroundColor: kRed));
+      return;
+    }
     setState(() => _saving = true);
     await _buildConfig().save();
     AlarmApp.of(context)?.setTheme(_selectedTheme);
@@ -92,7 +103,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
       if (path != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Backup guardado en $path'),
+            content: const Text('✅ Copia guardada. Contiene tu token y tu código: guárdala en un sitio seguro'),
             backgroundColor: kGreen,
             duration: const Duration(seconds: 4),
           ),
@@ -116,7 +127,6 @@ class _ConfigScreenState extends State<ConfigScreen> {
         type: FileType.custom,
         allowedExtensions: ['json'],
         dialogTitle: 'Seleccionar backup',
-        initialDirectory: kBackupDir,
       );
 
       if (files.isEmpty) {

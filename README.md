@@ -234,6 +234,19 @@ Uso personal. Todos los derechos reservados © Alfredo Fernández Badía, 2025.
 
 ## 📋 Historial de versiones
 
+### v2026.11.17
+- 💾 Copia de seguridad: se guarda con el selector del sistema (las rutas directas a Descargas no funcionan desde Android 11); al importar una copia con otra URL se borran el token y el código actuales si la copia no trae los suyos
+- 🧩 Widget: se marca "⚠ Sin actualizar" en gris si el estado tiene más de 10 minutos; se refresca cada 30 min y ya no se pone en "Sin conexión" en cada arranque
+- 🗺️ Las zonas no desaparecen si falla una petición; aviso cuando el robot desarma una zona al armar
+- 🔌 WebSocket: latido cada 30 s y sin conexiones duplicadas; los nombres de sensores que fallan se reintentan
+- 🔒 CI: el secreto de Play solo llega al paso de subida; `pubspec.lock` versionado
+- 🧪 Pruebas del controlador y de la copia de seguridad (28 en total); migración a `material_ui`; Dart >=3.9
+- 🧹 Código sin uso eliminado
+
+### v2026.11.16
+- 🔒 Ajustes: la URL de Home Assistant debe empezar por `https://`; si no, avisa al probar y al guardar. Una URL `http://` guardada antes muestra el motivo en lugar de "Sin conexión"
+- 🔔 Push (en HA): el filtro de zonas usa la marca de robot en lugar de `changed_by`, que Alarmo no refresca
+
 ### v2026.11.15
 - 📄 Política de privacidad en `docs/privacidad.md`, publicada con GitHub Pages (requisito de Google Play)
 - 🛠️ CI: los cambios solo de documentación (`docs/`, `*.md`) no recompilan la app

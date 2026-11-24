@@ -1,5 +1,5 @@
-// Versión 2026.11.12
-import 'package:flutter/material.dart';
+// Versión 2026.11.17
+import 'package:material_ui/material_ui.dart';
 import 'models.dart';
 
 // ─── Constantes de configuración ─────────────────────────────
@@ -9,12 +9,13 @@ const kPollSeconds    = 15;  // Sondeo REST sin WebSocket
 const kPollWsSeconds  = 30;  // Sondeo REST con WebSocket conectado
 const kMaxRetries     = 3;
 const kWsConnectTimeoutSeconds = 10;           // Timeout de conexión WebSocket
+const kWsPingSeconds   = 30;                   // Latido para detectar sockets colgados
+const kSensorNameRetryMinutes = 5;             // Reintento de nombres de sensores que fallaron
 const kWsBackoff      = [1, 2, 4, 8, 15, 30];  // Esperas de reconexión (s)
 const kLabelRefreshSeconds = 5;                // Refresco de la etiqueta "Hace Xs"
 const kHistoryMaxSize = 100;                   // Entradas máximas del historial
 const kNotifChannelId   = 'ha_alarm_channel';
 const kNotifChannelName = 'Alarma Casa HA';
-const kBackupDir        = '/storage/emulated/0/Download/Alarma Casa Backups';
 const kBackupVersion    = '1.2';
 const kFcmEvent         = 'ha_alarma_registrar_token'; // evento HA que registra el token FCM
 

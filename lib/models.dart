@@ -1,6 +1,6 @@
-// Versión 2026.11.12
+// Versión 2026.11.17
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'constants.dart';
@@ -136,6 +136,14 @@ class Config {
   }
 
   bool get isValid => url.isNotEmpty && token.isNotEmpty && entityId.isNotEmpty;
+
+  /// La app solo admite conexiones cifradas: Android bloquea http:// y el fallo
+  /// llega como un error técnico confuso. Devuelve el motivo o null si es válida.
+  String? get urlError {
+    if (url.isEmpty) return null; // la falta de URL ya la cubre isValid
+    if (!url.toLowerCase().startsWith('https://')) return 'La URL debe empezar por https://';
+    return null;
+  }
 
   static Future<Config> load() async {
     final p = await SharedPreferences.getInstance();

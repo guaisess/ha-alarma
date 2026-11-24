@@ -1,4 +1,4 @@
-// Versión 2026.11.6
+// Versión 2026.11.17
 import 'package:flutter/foundation.dart';
 
 /// Puente entre las notificaciones (FCM y locales) y la pantalla principal.

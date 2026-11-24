@@ -1,6 +1,7 @@
-// Versión 2026.11.12
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+// Versión 2026.11.17
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter_localizations/flutter_localizations.dart' show GlobalWidgetsLocalizations;
+import 'package:cupertino_ui/cupertino_ui.dart' show GlobalCupertinoLocalizations;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';

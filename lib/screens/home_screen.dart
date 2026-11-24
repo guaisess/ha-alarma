@@ -1,6 +1,6 @@
-// Versión 2026.11.12
+// Versión 2026.11.17
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -98,6 +98,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (mounted) setState(() {});
     _intentarEnfocar();
     _ejecutarAccionWidget();
+    final aviso = _controller.takeAviso();
+    if (aviso != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(aviso), backgroundColor: kBlue));
+    }
   }
 
   @override

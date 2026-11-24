@@ -1,4 +1,4 @@
-// Versión 2026.11.8
+// Versión 2026.11.17
 // Pruebas del historial: deduplicación por zona, marca de robot y límite
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';

@@ -1,4 +1,4 @@
-# Versión 2026.11.15
+# Versión 2026.11.17
 # Compila la app como paquete AAB firmado para Google Play (ya no se publica APK suelto).
 name: Build AAB (Google Play)
 
@@ -17,8 +17,6 @@ jobs:
     permissions:
       contents: write
     env:
-      # Si el secreto no existe, el paso de subida a Play se omite
-      PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
       PAQUETE: es.fernandezbadia.alarmacasa
 
     steps:
@@ -223,9 +221,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # El secreto solo se expone a estos dos pasos, no a todo el trabajo (Gradle y plugins incluidos)
+      - name: Comprobar credencial de Google Play
+        id: play
+        env:
+          PLAY_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$PLAY_JSON" ]; then echo "habilitado=true" >> "$GITHUB_OUTPUT"; fi
+
       # Requiere la primera subida manual en Play Console y el secreto PLAY_SERVICE_ACCOUNT_JSON
       - name: Subir a Google Play (prueba interna)
-        if: env.PLAY_SERVICE_ACCOUNT_JSON != ''
+        if: steps.play.outputs.habilitado == 'true'
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}

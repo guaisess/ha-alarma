@@ -1,4 +1,4 @@
-// Versión 2026.11.12
+// Versión 2026.11.17
 package es.fernandezbadia.alarmacasa
 
 import android.appwidget.AppWidgetManager
@@ -31,11 +31,19 @@ private fun colorForState(key: String): Int = when (key) {
     else         -> android.graphics.Color.parseColor("#94a3b8")
 }
 
+// Si el estado guardado es muy antiguo (la app lleva rato cerrada) no se muestra como actual
+private const val MINUTOS_PARA_VIEJO = 10
+private fun estaViejo(prefs: SharedPreferences): Boolean {
+    val ms = prefs.getLong("flutter.widget_updated_ms", 0L)
+    return ms == 0L || System.currentTimeMillis() - ms > MINUTOS_PARA_VIEJO * 60_000L
+}
+
 // Texto inferior: hora de actualización y resumen de zonas que difieren de la maestra
 private fun infoText(prefs: SharedPreferences, sep: String): String {
     val updatedAt = prefs.getString("flutter.widget_updated_at", "") ?: ""
     val zones     = prefs.getString("flutter.widget_zones", "") ?: ""
-    return listOf(if (updatedAt.isNotEmpty()) "Act: $updatedAt" else "", zones)
+    val viejo = if (estaViejo(prefs)) "⚠ Sin actualizar" else ""
+    return listOf(viejo, if (updatedAt.isNotEmpty()) "Act: $updatedAt" else "", zones)
         .filter { it.isNotEmpty() }
         .joinToString(sep)
 }
@@ -77,7 +85,7 @@ class AlarmWidget : AppWidgetProvider() {
             val stateLabel = prefs.getString("flutter.widget_state_label", "Alarma Casa") ?: "Alarma Casa"
             val updatedAt  = prefs.getString("flutter.widget_updated_at",  "") ?: ""
             val stateKey   = prefs.getString("flutter.widget_state_key",   "unknown") ?: "unknown"
-            val color      = colorForState(stateKey)
+            val color      = if (estaViejo(prefs)) android.graphics.Color.parseColor("#94a3b8") else colorForState(stateKey)
             val pending    = launchIntent(context)
 
             for (id in appWidgetIds) {
@@ -121,7 +129,7 @@ class AlarmWidgetWide : AppWidgetProvider() {
             val stateLabel = prefs.getString("flutter.widget_state_label", "Alarma Casa") ?: "Alarma Casa"
             val updatedAt  = prefs.getString("flutter.widget_updated_at",  "") ?: ""
             val stateKey   = prefs.getString("flutter.widget_state_key",   "unknown") ?: "unknown"
-            val color      = colorForState(stateKey)
+            val color      = if (estaViejo(prefs)) android.graphics.Color.parseColor("#94a3b8") else colorForState(stateKey)
             val pending    = launchIntent(context)
 
             for (id in appWidgetIds) {

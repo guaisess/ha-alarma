@@ -1,7 +1,9 @@
 # App Alarma Casa — agent guide
 
 ## Stack
-- Flutter 3.50.1 stable, Dart >=3.0.0 <4.0.0, Android-only (no iOS)
+- Flutter 3.50.1 stable, Dart >=3.9.0 <4.0.0, Android-only (no iOS)
+- UI con `package:material_ui` (el import `flutter/material.dart` está obsoleto en Flutter 3.50)
+- `pubspec.lock` SE versiona (compilaciones reproducibles)
 - No state mgmt library — `AlarmController extends ChangeNotifier` in `lib/controller.dart`
 - No routing package — `Navigator.push(MaterialPageRoute(...))`
 - Theme: static `AlarmApp.of(context)` pattern in `lib/main.dart`
@@ -45,4 +47,6 @@
 - Todos los comentarios en español
 
 ## Testing
-- No tests in repo. Build verification via CI only.
+- Tests en `test/` (`flutter test`, también en el CI antes de compilar): modelos, historial, parseo de HA, controlador (zonas/robots/widget) y copia de seguridad.
+- El controlador expone ganchos `@visibleForTesting` (`setConfigForTest`, `onWsEntityForTest`...) para probarlo sin red.
+- El Kotlin, el widget y el flujo de Gradle solo se verifican en el CI.

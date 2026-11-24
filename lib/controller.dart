@@ -1,6 +1,6 @@
-// Versión 2026.11.12
+// Versión 2026.11.17
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'constants.dart';
 import 'models.dart';
 import 'services.dart';
@@ -16,6 +16,8 @@ class AlarmController extends ChangeNotifier {
   String?          _error;
   Map<String, Map<String, dynamic>> _zoneRaw = {}; // estado+atributos de zonas y marcas de robot
   Map<String, String> _sensorNames = {};            // entidad -> nombre legible
+  DateTime? _nombresReintento;                      // próximo reintento de nombres fallidos
+  String? _aviso;                                   // mensaje único para la pantalla
 
   HaWebSocketService? _ws;
   Timer?  _pollTimer;
@@ -27,9 +29,7 @@ class AlarmController extends ChangeNotifier {
   AlarmStateData? get stateData   => _stateData;
   DateTime?       get lastFetch   => _lastFetch;
   bool            get loading     => _loading;
-  bool            get refreshing  => _refreshing;
   bool            get actionBusy  => _actionBusy;
-  bool            get wsConnected => _wsConnected;
   bool            get showArmModes => _config?.showArmModes ?? false;
   String?         get error       => _error;
 
@@ -64,6 +64,11 @@ class AlarmController extends ChangeNotifier {
             robot: d.autoFlagEntity != null && _zoneRaw[d.autoFlagEntity]?['state'] == 'on');
       } else if (d.autoFlagEntity == id && nuevo == 'on') {
         HistoryService.markRobot(d.label);
+        final m = _stateData?.state;
+        if (m == AlarmState.arming || m == AlarmState.armedAway || m == AlarmState.armedHome ||
+            m == AlarmState.armedNight || m == AlarmState.armedCustomBypass) {
+          _aviso = '🤖 ${d.label} desarmada: el robot estaba limpiando';
+        }
       }
     }
   }
@@ -86,14 +91,33 @@ class AlarmController extends ChangeNotifier {
   /// Consulta una sola vez el nombre de los sensores abiertos/anulados nuevos
   Future<void> _loadSensorNames() async {
     if (_config == null || !_config!.isValid) return;
+    final ahora = DateTime.now();
+    final reintentar = _nombresReintento == null || ahora.isAfter(_nombresReintento!);
     final ids = <String>{
       ...?_stateData?.openSensors,
       for (final z in zones) ...[...z.openSensors, ...z.bypassedSensors],
-    }.where((i) => !_sensorNames.containsKey(i)).toList();
+    }.where((i) => !_sensorNames.containsKey(i) || (reintentar && _sensorNames[i]!.isEmpty)).toList();
     if (ids.isEmpty) return;
+    _nombresReintento = ahora.add(const Duration(minutes: kSensorNameRetryMinutes));
     _sensorNames = {..._sensorNames, ...await HaService(_config!).getFriendlyNames(ids)};
     notifyListeners();
   }
+
+  /// Mensaje de un solo uso para mostrar en pantalla (null si no hay)
+  String? takeAviso() {
+    final a = _aviso;
+    _aviso = null;
+    return a;
+  }
+
+  @visibleForTesting
+  void setConfigForTest(Config c) => _config = c;
+  @visibleForTesting
+  void setStateForTest(AlarmStateData d) => _stateData = d;
+  @visibleForTesting
+  void onWsEntityForTest(String id, Map<String, dynamic> s) => _onWsEntity(id, s);
+  @visibleForTesting
+  String zonesSummaryForTest() => _zonesSummary();
 
   /// Zonas desarmadas por la automatización de robots
   List<ZoneData> get robotZones => zones.where((z) => z.autoDisarmed).toList();
@@ -172,8 +196,9 @@ class AlarmController extends ChangeNotifier {
   Future<void> _refreshZones() async {
     if (_config == null || !_config!.isValid) return;
     final antes = _zoneRaw;
-    _zoneRaw = await HaService(_config!).getZoneStates();
-    for (final e in _zoneRaw.entries) {
+    final nuevo = await HaService(_config!).getZoneStates();
+    _zoneRaw = {...antes, ...nuevo}; // si una petición falla, se conserva lo anterior
+    for (final e in nuevo.entries) {
       _registrarZona(e.key, antes[e.key], e.value);
     }
     notifyListeners();
@@ -247,7 +272,7 @@ class AlarmController extends ChangeNotifier {
           return;
         } catch (e) {
           if (attempt == maxRetries) {
-            _error = 'Sin conexión';
+            _error = _config!.urlError ?? 'Sin conexión';
             _loading = false;
             notifyListeners();
           } else {

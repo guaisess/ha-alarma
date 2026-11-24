@@ -1,10 +1,10 @@
 name: ha_alarm
 description: Home Assistant Alarm Control
 publish_to: none
-version: 2026.11.15+55
+version: 2026.11.17+57
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.9.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -14,7 +14,6 @@ dependencies:
   http: ^1.2.0
   shared_preferences: ^2.2.2
   package_info_plus: ^10.2.2
-  path_provider: ^2.1.2
   firebase_core: ^5.2.0
   firebase_messaging: ^17.1.0
   flutter_local_notifications: ^23.0.4
@@ -22,6 +21,8 @@ dependencies:
   intl: ^0.20.3
   file_picker: ^13.4.1
   flutter_secure_storage: ^11.2.0
+  material_ui: ^1.11.1
+  cupertino_ui: ^1.1.7
 
 dev_dependencies:
   flutter_test:

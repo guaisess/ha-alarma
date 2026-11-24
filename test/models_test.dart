@@ -1,6 +1,6 @@
-// Versión 2026.11.12
+// Versión 2026.11.17
 // Pruebas de modelos: estados, zonas, configuración e historial (serialización)
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ha_alarm/models.dart';
 
@@ -68,6 +68,15 @@ void main() {
       expect(Config.cleanDeviceName('  Alfredo Móvil! '), 'alfredomvil');
       expect(Config.cleanDeviceName('mc-2_ok'), 'mc-2_ok');
       expect(Config.cleanDeviceName('a' * 40).length, 30);
+    });
+
+    test('urlError solo admite https://', () {
+      Config con(String url) => Config(url: url, token: 't', entityId: 'e', code: '');
+      expect(con('https://bargas.fernandezbadia.es').urlError, isNull);
+      expect(con('HTTPS://ejemplo.es').urlError, isNull);
+      expect(con('http://192.168.0.10:8123').urlError, 'La URL debe empezar por https://');
+      expect(con('bargas.fernandezbadia.es').urlError, 'La URL debe empezar por https://');
+      expect(con('').urlError, isNull); // lo cubre isValid
     });
 
     test('isValid exige url, token y entidad', () {

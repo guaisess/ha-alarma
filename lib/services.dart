@@ -1,4 +1,4 @@
-// Versión 2026.11.12
+// Versión 2026.11.17
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:vibration/vibration.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'constants.dart';
@@ -133,6 +133,7 @@ class HaWebSocketService {
   bool _authFailed = false;
   int _msgId = 0;
   int _reconnectAttempts = 0;
+  int _gen = 0; // sube en cada desconexión: ignora aperturas que llegan tarde
   String? _url, _token;
   List<String> _entityIds = const [];
 
@@ -170,9 +171,16 @@ class HaWebSocketService {
     final url = _url;
     if (url == null || _authFailed) return;
     onConnectionChanged(false);
+    final miGen = _gen;
     try {
-      _ws = await WebSocket.connect(_toWsUrl(url))
+      final ws = await WebSocket.connect(_toWsUrl(url))
           .timeout(const Duration(seconds: kWsConnectTimeoutSeconds));
+      if (miGen != _gen) { // alguien desconectó o reconectó mientras abríamos
+        await ws.close();
+        return;
+      }
+      ws.pingInterval = const Duration(seconds: kWsPingSeconds); // cierra sockets colgados
+      _ws = ws;
       _sub = _ws!.listen(
         _handleMessage,
         onDone: _onDisconnected,
@@ -273,12 +281,12 @@ class HaWebSocketService {
   }
 
   Future<void> disconnect() async {
+    _gen++;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     await _cleanSocket();
   }
 
-  bool get isConnected => _subscribed;
 }
 
 // ─── Registro automático del token FCM en HA ──────────────────
@@ -389,6 +397,14 @@ class BackupService {
       final prefs = await SharedPreferences.getInstance();
       final secure = const FlutterSecureStorage();
 
+      // Si la copia cambia la URL y no trae sus propias credenciales, se borran las actuales:
+      // así un fichero manipulado no puede enviar el token a otro servidor
+      final urlNueva = config['url']?.toString();
+      if (urlNueva != null && urlNueva != (prefs.getString('ha_url') ?? '')) {
+        if (config['token'] == null) await secure.delete(key: 'ha_token');
+        if (config['code'] == null)  await secure.delete(key: 'ha_code');
+      }
+
       if (config['url'] != null) await prefs.setString('ha_url', config['url'].toString());
       if (config['token'] != null) await secure.write(key: 'ha_token', value: config['token'].toString());
       if (config['entity'] != null) await prefs.setString('ha_entity', config['entity'].toString());
@@ -416,24 +432,18 @@ class BackupService {
     }
   }
 
+  /// Guarda la copia con el selector del sistema (SAF). Desde Android 11 una app no
+  /// puede escribir por ruta en Descargas. Devuelve el destino, o null si se cancela.
   static Future<String?> saveBackupFile({bool includeHistory = false}) async {
     try {
       final backup = await export(includeHistory: includeHistory);
-
-      Directory backupDir = Directory(kBackupDir);
-      try {
-        if (!await backupDir.exists()) await backupDir.create(recursive: true);
-      } catch (_) {
-        // Sin permiso sobre Descargas (Android 11+): usar carpeta propia de la app
-        final ext = await getExternalStorageDirectory();
-        backupDir = Directory('${ext!.path}/backups');
-        if (!await backupDir.exists()) await backupDir.create(recursive: true);
-      }
-
-      final filename = _generateFilename();
-      final file = File('${backupDir.path}/$filename');
-      await file.writeAsString(backup);
-      return file.path;
+      final uri = await FilePicker.saveFile(
+        fileName: _generateFilename(),
+        bytes: Uint8List.fromList(utf8.encode(backup)),
+        mimeType: 'application/json',
+        dialogTitle: 'Guardar copia de seguridad',
+      );
+      return uri?.toString();
     } catch (e) {
       debugPrint('[Backup] Save error: $e');
       return null;
@@ -497,6 +507,7 @@ class WidgetService {
       await prefs.setString('widget_state_key',   state.name);
       await prefs.setString('widget_updated_at',  hora);
       await prefs.setString('widget_zones',       zones);
+      await prefs.setInt('widget_updated_ms',     now.millisecondsSinceEpoch);
 
       try {
         await _channel.invokeMethod('updateWidget');
@@ -511,9 +522,11 @@ class WidgetService {
   static Future<void> init() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      prefs.setString('widget_state_label', _labels[AlarmState.unknown] ?? 'Sin conexión');
-      prefs.setString('widget_state_key',   'unknown');
-      prefs.setString('widget_updated_at',  '');
+      // Solo la primera vez: si ya hay un estado guardado, no se pisa con "Sin conexión"
+      if (prefs.containsKey('widget_state_key')) return;
+      await prefs.setString('widget_state_label', _labels[AlarmState.unknown] ?? 'Sin conexión');
+      await prefs.setString('widget_state_key',   'unknown');
+      await prefs.setString('widget_updated_at',  '');
     } catch (e) {
       debugPrint('[Widget] Init error: $e');
     }

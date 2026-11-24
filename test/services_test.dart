@@ -1,4 +1,4 @@
-// Versión 2026.11.12
+// Versión 2026.11.17
 // Pruebas de servicios: parseo de estados de HA, sensores y comparación de versiones
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ha_alarm/models.dart';
